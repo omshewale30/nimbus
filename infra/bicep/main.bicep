@@ -26,12 +26,12 @@ param apiImage string
 @description('Frontend container image, e.g. myacr.azurecr.io/web:sha.')
 param webImage string
 
-@description('SQL administrator login name.')
-param sqlAdminLogin string = '${resourcePrefix}admin'
+@description('PostgreSQL administrator login name.')
+param dbAdminLogin string = '${resourcePrefix}admin'
 
-@description('SQL administrator password. Supply via a pipeline secret, never in source.')
+@description('PostgreSQL administrator password. Supply via a pipeline secret, never in source. Keep it URL-safe (alphanumeric): it is interpolated into the SQLAlchemy DATABASE_URL.')
 @secure()
-param sqlAdminPassword string
+param dbAdminPassword string
 
 @description('Entra backend (API) app registration client id.')
 param entraBackendClientId string = '9025831a-9aee-4244-89c8-98d0814a5889'
@@ -115,19 +115,21 @@ module storage 'modules/storage.bicep' = {
   }
 }
 
-module sql 'modules/sql.bicep' = {
+module db 'modules/postgres.bicep' = {
   scope: rg
-  name: 'sql'
+  name: 'postgres'
   params: {
     namePrefix: namePrefix
     location: location
     tags: tags
-    sqlAdminLogin: sqlAdminLogin
-    sqlAdminPassword: sqlAdminPassword
-    entraAdminObjectId: identity.outputs.principalId
-    entraAdminLogin: 'id-${namePrefix}'
+    adminLogin: dbAdminLogin
+    adminPassword: dbAdminPassword
   }
 }
+
+// Full SQLAlchemy URL, delivered to the API via Key Vault (it embeds the
+// admin password, so it must never appear as a plain env var).
+var databaseUrl = 'postgresql+psycopg://${dbAdminLogin}:${dbAdminPassword}@${db.outputs.serverFqdn}:5432/${db.outputs.databaseName}?sslmode=require'
 
 module keyVault 'modules/key-vault.bicep' = {
   scope: rg
@@ -139,7 +141,7 @@ module keyVault 'modules/key-vault.bicep' = {
     appPrincipalId: identity.outputs.principalId
     seedSecrets: {
       'appinsights-connection-string': observability.outputs.appInsightsConnectionString
-      'sql-admin-password': sqlAdminPassword
+      'database-url': databaseUrl
     }
   }
 }
@@ -175,8 +177,8 @@ var webFqdn = '${webAppName}.${env.outputs.defaultDomain}'
 var apiBaseUrl = 'https://${apiFqdn}'
 var webOrigin = 'https://${webFqdn}'
 
-var databaseUrl = 'mssql+pyodbc://@${sql.outputs.serverFqdn}:1433/${sql.outputs.databaseName}?driver=ODBC+Driver+18+for+SQL+Server&Authentication=ActiveDirectoryMsi&Encrypt=yes'
 var appInsightsSecretUrl = '${keyVault.outputs.keyVaultUri}secrets/appinsights-connection-string'
+var databaseUrlSecretUrl = '${keyVault.outputs.keyVaultUri}secrets/database-url'
 
 module apiApp 'modules/container-app.bicep' = {
   scope: rg
@@ -200,7 +202,6 @@ module apiApp 'modules/container-app.bicep' = {
       { name: 'ENTRA_BACKEND_APP_ID_URI', value: entraBackendAppIdUri }
       { name: 'ADMIN_GROUP_ID', value: adminGroupId }
       { name: 'CORS_ALLOW_ORIGINS', value: webOrigin }
-      { name: 'DATABASE_URL', value: databaseUrl }
       { name: 'AZURE_STORAGE_ACCOUNT_URL', value: storage.outputs.blobEndpoint }
       { name: 'AZURE_STORAGE_CONTAINER', value: storage.outputs.containerName }
       { name: 'AZURE_AI_FOUNDRY_ENDPOINT', value: foundryEndpoint }
@@ -212,9 +213,11 @@ module apiApp 'modules/container-app.bicep' = {
     ]
     secretRefs: [
       { name: 'appinsights-connection-string', keyVaultUrl: appInsightsSecretUrl }
+      { name: 'database-url', keyVaultUrl: databaseUrlSecretUrl }
     ]
     secretEnvVars: [
       { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: 'appinsights-connection-string' }
+      { name: 'DATABASE_URL', secretRef: 'database-url' }
     ]
   }
 }

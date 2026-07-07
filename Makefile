@@ -6,7 +6,7 @@ SHELL := /bin/bash
 PYTHON ?= python3.11
 
 .PHONY: help dev up down logs api web install-api install-web \
-        test test-api test-web e2e lint typecheck fmt migrate
+        test test-api test-web e2e lint typecheck fmt migrate content-sync
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -37,6 +37,9 @@ web: ## Run the frontend dev server
 
 migrate: ## Apply database migrations
 	cd apps/api && . .venv/bin/activate && alembic upgrade head
+
+content-sync: ## Sync apps/api/content markdown into the database
+	cd apps/api && . .venv/bin/activate && python -m app.services.content_sync
 
 test: test-api test-web ## Run all unit/component tests
 

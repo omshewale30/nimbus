@@ -52,7 +52,7 @@ az deployment sub create \
 ```
 
 Apply database migrations after the first deploy (from a machine that can reach
-Azure SQL, or a one-off job):
+Azure PostgreSQL, or a one-off job):
 
 ```bash
 alembic upgrade head

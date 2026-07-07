@@ -11,8 +11,10 @@ param tenantId = '58b3d54f-16c9-42d3-af08-1fcabd095666'
 param apiImage = readEnvironmentVariable('API_IMAGE', 'REPLACE_ME.azurecr.io/nimbus-api:latest')
 param webImage = readEnvironmentVariable('WEB_IMAGE', 'REPLACE_ME.azurecr.io/nimbus-web:latest')
 
-param sqlAdminLogin = 'nimbusadmin'
-param sqlAdminPassword = readEnvironmentVariable('SQL_ADMIN_PASSWORD')
+// The GitHub secret keeps its historical name (SQL_ADMIN_PASSWORD); it is the
+// PostgreSQL admin password. Keep it URL-safe (alphanumeric).
+param dbAdminLogin = 'nimbusadmin'
+param dbAdminPassword = readEnvironmentVariable('SQL_ADMIN_PASSWORD')
 
 param entraBackendClientId = '9025831a-9aee-4244-89c8-98d0814a5889'
 param entraBackendAppIdUri = 'api://nimbus'

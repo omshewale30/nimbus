@@ -19,7 +19,7 @@ make dev            # or: docker compose up --build
 
 - Frontend: http://localhost:3000
 - Backend: http://localhost:8000 (OpenAPI docs at `/docs`)
-- Database: SQL Server on localhost:1433
+- Database: PostgreSQL on localhost:5432
 - The API container runs `alembic upgrade head` on startup, so the local schema
   is created automatically.
 
@@ -80,9 +80,9 @@ cd apps/web && npx playwright install --with-deps && npm run test:e2e
 
 | Issue | Fix |
 | --- | --- |
-| Port 3000/8000/1433 in use | Stop the conflicting process or change the mapped port in `docker-compose.yml`. |
+| Port 3000/8000/5432 in use | Stop the conflicting process or change the mapped port in `docker-compose.yml`. |
 | SQL container slow to accept connections | It has a health check; the API waits for it. First start can take ~30s. |
-| `pyodbc` / ODBC driver errors locally | Use the SQLite `DATABASE_URL` for pure-local runs, or run the backend via Docker (the image bundles the driver). |
+| `psycopg` / connection errors locally | Use the SQLite `DATABASE_URL` for pure-local runs, or start the compose `db` service (`docker compose up db`). |
 | Frontend can't reach backend | Confirm `NEXT_PUBLIC_API_BASE_URL` and that the API is running / CORS origin matches. |
 | MSAL errors with auth enabled | Ensure the redirect URI is registered and the API scope is consented. See the runbook. |
 | Changes to `NEXT_PUBLIC_*` not taking effect | These inline at build time; restart `npm run dev` after editing `.env.local`. |

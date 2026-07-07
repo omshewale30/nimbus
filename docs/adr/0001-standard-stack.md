@@ -23,7 +23,7 @@ Standardize on:
 - **Azure AI Foundry** for AI — the sanctioned platform for model access,
   governance, and quotas, reachable with managed identity.
 
-Supporting choices: Azure SQL, Blob Storage, optional AI Search, Key Vault,
+Supporting choices: Azure Database for PostgreSQL, Blob Storage, optional AI Search, Key Vault,
 Container Apps, App Insights, GitHub Actions, and Bicep.
 
 ## Consequences

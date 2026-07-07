@@ -69,7 +69,7 @@ A single **user-assigned managed identity** is granted least-privilege roles:
 | Key Vault | Key Vault Secrets User |
 | Storage | Storage Blob Data Contributor |
 | AI Search (optional) | Search Index Data Reader |
-| Azure SQL | Entra admin / DB user |
+| Azure PostgreSQL | admin password via Key Vault (`database-url` secret) |
 
 Backend Azure SDK calls use `DefaultAzureCredential`, which selects this identity
 in Azure (`AZURE_CLIENT_ID` is set) and falls back to `az login` locally.

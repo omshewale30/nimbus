@@ -43,7 +43,7 @@ Next.js frontend  ──HTTPS + Bearer token──>  FastAPI backend
                                                │  validates JWT (issuer/aud/keys)
                                                │  extracts roles/groups
                                                ├─> Azure AI Foundry (via provider)
-                                               ├─> Azure SQL (SQLAlchemy)
+                                               ├─> Azure PostgreSQL (SQLAlchemy)
                                                ├─> Azure Blob Storage
                                                └─> Azure Key Vault / Managed Identity
 ```
@@ -61,7 +61,7 @@ directly. All privileged calls go through the backend. See
 | Backend | FastAPI + Python 3.11 |
 | Auth | Microsoft Entra ID (OAuth2 / OIDC) |
 | AI | Azure AI Foundry (mockable) |
-| Database | Azure SQL (SQLAlchemy + Alembic) |
+| Database | Azure Database for PostgreSQL (SQLAlchemy + Alembic) |
 | Storage | Azure Blob Storage |
 | Search/RAG | Azure AI Search (optional) |
 | Hosting | Azure Container Apps |
@@ -79,7 +79,7 @@ Prerequisites: **Docker**, **Node 20 LTS or 22 LTS**, **Python 3.11+**, and
 
 ```bash
 cp .env.example .env
-make dev        # frontend :3000, backend :8000, SQL Server (docker) :1433
+make dev        # frontend :3000, backend :8000, PostgreSQL (docker) :5432
 ```
 
 `make dev` runs everything with `AI_PROVIDER=mock` and `AUTH_MODE=disabled`, so
@@ -104,7 +104,7 @@ Copy `.env.example` to `.env` and adjust. Frontend-specific values live in
 | `AZURE_TENANT_ID` | backend | placeholder | Entra tenant |
 | `ENTRA_BACKEND_CLIENT_ID` | backend | placeholder | API audience |
 | `ENTRA_BACKEND_APP_ID_URI` | backend | placeholder | Expected `aud` |
-| `DATABASE_URL` | backend | local SQL Server | SQLAlchemy URL |
+| `DATABASE_URL` | backend | local PostgreSQL | SQLAlchemy URL |
 | `ADMIN_GROUP_ID` | backend | placeholder | Group/role for admin routes |
 | `AZURE_AI_FOUNDRY_ENDPOINT` | backend | — | Foundry endpoint (prod) |
 | `NEXT_PUBLIC_API_BASE_URL` | frontend | `http://localhost:8000` | Backend base URL |
@@ -164,7 +164,7 @@ Detailed walkthrough: [`docs/security.md`](docs/security.md) and the runbook.
 ## Azure setup overview
 
 Infrastructure is defined in [`infra/bicep`](infra/bicep). It provisions a
-resource group's worth of services (Container Apps, ACR, Key Vault, Azure SQL,
+resource group's worth of services (Container Apps, ACR, Key Vault, Azure PostgreSQL,
 Storage, App Insights). See [Deployment overview](#deployment-overview).
 
 ## Deployment overview

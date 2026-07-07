@@ -63,6 +63,9 @@ class Settings(BaseSettings):
     # ---- Database ----
     database_url: str = "sqlite+pysqlite:///./local.db"
 
+    # ---- Content (git-authored markdown, synced into the DB at startup) ----
+    content_dir: str = str(_API_ROOT / "content")
+
     # ---- Azure AI Foundry (only used when ai_provider == foundry) ----
     azure_ai_foundry_endpoint: str = ""
     azure_ai_foundry_project_name: str = ""

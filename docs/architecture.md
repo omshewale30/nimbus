@@ -16,7 +16,7 @@ flowchart TD
     Entra[Microsoft Entra ID]
     API[FastAPI backend]
     Foundry[Azure AI Foundry]
-    SQL[(Azure SQL)]
+    SQL[(Azure PostgreSQL)]
     Blob[(Azure Blob Storage)]
     Search[(Azure AI Search - optional)]
     KV[Azure Key Vault]

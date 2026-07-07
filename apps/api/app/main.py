@@ -6,6 +6,7 @@ centralized error handling, health probes, and the versioned API router.
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,6 +18,8 @@ from app.core.config import get_settings
 from app.core.errors import register_error_handlers
 from app.core.logging import configure_logging, get_logger
 from app.core.middleware import CorrelationIdMiddleware
+from app.db.session import get_session_factory
+from app.services.content_sync import sync_content
 
 settings = get_settings()
 configure_logging(settings.log_level)
@@ -50,6 +53,21 @@ async def lifespan(_: FastAPI):
             logger.info("Azure Monitor OpenTelemetry enabled")
         except Exception:  # noqa: BLE001
             logger.exception("Failed to configure Azure Monitor; continuing without it")
+    # Mirror git-authored content into the DB. Best-effort: the app still
+    # serves existing rows if a sync fails. Skipped in tests (they use their
+    # own engine/session and seed data explicitly).
+    if settings.environment != "test":
+        try:
+            session = get_session_factory()()
+            try:
+                result = sync_content(session, Path(settings.content_dir))
+                session.commit()
+            finally:
+                session.close()
+            log = logger.warning if result.errors else logger.info
+            log("Content sync: %s", result.summary(), extra={"errors": result.errors})
+        except Exception:  # noqa: BLE001
+            logger.exception("Content sync failed; continuing with existing content")
     yield
 
 
