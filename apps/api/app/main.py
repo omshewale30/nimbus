@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
 
 from app.api.v1.router import api_router
 from app.api.v1.routes import health
@@ -80,3 +81,4 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+

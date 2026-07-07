@@ -19,7 +19,7 @@ export const msalConfig: Configuration = {
 
 /** Scopes requested at login (OIDC basics). */
 export const loginRequest = {
-  scopes: ["openid", "profile", "email"],
+  scopes: ["https://graph.microsoft.com/User.Read"],
 };
 
 /** Scope requested to call the backend API. */

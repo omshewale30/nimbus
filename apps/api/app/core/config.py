@@ -7,11 +7,15 @@ from __future__ import annotations
 
 from enum import StrEnum
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _LOCAL_ONLY_ENVIRONMENTS = {"local", "test"}
+_API_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = _API_ROOT.parents[1]
+_ENV_FILES = (str(_API_ROOT / ".env"), str(_REPO_ROOT / ".env"))
 
 
 class AIProviderName(StrEnum):
@@ -28,7 +32,8 @@ class AuthMode(StrEnum):
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        # Support both `apps/api/.env` and repo-root `.env`, regardless of cwd.
+        env_file=_ENV_FILES,
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=False,

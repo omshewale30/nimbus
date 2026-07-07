@@ -1,30 +1,37 @@
-"""Microsoft Entra ID access-token validation.
+"""Bearer-token validation via Microsoft Graph introspection.
 
-Validates the incoming bearer JWT against the tenant issuer, audience, and the
-tenant's published signing keys (JWKS). Role/group claims are extracted for
-authorization decisions elsewhere.
+The frontend acquires access tokens scoped to Microsoft Graph (`User.Read`),
+not to this API. Such tokens are audienced for Graph and Microsoft does not
+publish a stable, third-party-verifiable JWT format for them — access tokens
+for a resource you don't own are meant to be treated as opaque. So rather
+than decoding the token locally, we ask Microsoft Graph to vouch for it: a
+200 from `GET /v1.0/me` using the token as a bearer credential proves the
+token is genuine, and Graph's response gives us the caller's identity
+directly.
 
-When `AUTH_MODE=disabled` (local development only) validation is bypassed and a
-clearly-labelled fake development principal is returned. This path logs a
-warning on every request so it can never be mistaken for a secure configuration.
+`AUTH_MODE=disabled` (LOCAL/TEST ONLY) bypasses validation entirely and
+returns a fake dev principal. It logs a warning on every request so it can
+never be mistaken for a secure configuration.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-import jwt
-from jwt import PyJWKClient
+import httpx
 
 from app.core.config import Settings
-from app.core.errors import UnauthorizedError
+from app.core.errors import UnauthorizedError, UpstreamServiceError
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+_GRAPH_ME_URL = "https://graph.microsoft.com/v1.0/me"
+_GRAPH_TIMEOUT_SECONDS = 5.0
+
 
 @dataclass
 class Principal:
-    """The authenticated caller, normalized from token claims."""
+    """The authenticated caller, normalized from the Graph profile."""
 
     subject: str
     name: str
@@ -38,18 +45,6 @@ class Principal:
 
     def in_group(self, group_id: str) -> bool:
         return bool(group_id) and group_id in self.groups
-
-
-# Cache one JWKS client per tenant JWKS URI. PyJWKClient caches keys internally.
-_jwks_clients: dict[str, PyJWKClient] = {}
-
-
-def _jwks_client(jwks_uri: str) -> PyJWKClient:
-    client = _jwks_clients.get(jwks_uri)
-    if client is None:
-        client = PyJWKClient(jwks_uri, cache_keys=True)
-        _jwks_clients[jwks_uri] = client
-    return client
 
 
 def _dev_principal() -> Principal:
@@ -67,16 +62,14 @@ def _dev_principal() -> Principal:
     )
 
 
-def _extract_principal(claims: dict) -> Principal:
-    # Entra puts app roles in `roles` and (when configured) group ids in `groups`.
-    roles = claims.get("roles") or []
-    groups = claims.get("groups") or []
+def _extract_principal(profile: dict) -> Principal:
+    # Graph's /me response has no app-role or group-membership claims — those
+    # require separate calls and scopes. See module docstring for the gap
+    # this leaves in role/group-based authorization.
     return Principal(
-        subject=claims.get("oid") or claims.get("sub") or "unknown",
-        name=claims.get("name", ""),
-        email=claims.get("preferred_username") or claims.get("upn") or claims.get("email", ""),
-        roles=list(roles),
-        groups=list(groups),
+        subject=profile.get("id", "unknown"),
+        name=profile.get("displayName", ""),
+        email=profile.get("mail") or profile.get("userPrincipalName", ""),
     )
 
 
@@ -91,26 +84,27 @@ def validate_token(token: str, settings: Settings) -> Principal:
     if not settings.azure_tenant_id:
         raise UnauthorizedError("Auth is enabled but AZURE_TENANT_ID is not configured")
 
-    # The accepted audience can be the API's app id URI or its client id.
-    audiences = [
-        a
-        for a in (settings.entra_backend_app_id_uri, settings.entra_backend_client_id)
-        if a
-    ]
+    if not token:
+        raise UnauthorizedError("Missing bearer token")
 
     try:
-        signing_key = _jwks_client(settings.entra_jwks_uri).get_signing_key_from_jwt(token)
-        claims = jwt.decode(
-            token,
-            signing_key.key,
-            algorithms=["RS256"],
-            audience=audiences or None,
-            issuer=settings.entra_issuer,
-            leeway=settings.jwt_leeway_seconds,
-            options={"require": ["exp", "iss", "aud"]},
+        response = httpx.get(
+            _GRAPH_ME_URL,
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=_GRAPH_TIMEOUT_SECONDS,
         )
-    except jwt.PyJWTError as exc:
-        logger.info("Token validation failed: %s", exc)
-        raise UnauthorizedError("Invalid or expired access token") from exc
+    except httpx.HTTPError as exc:
+        logger.warning("Microsoft Graph unreachable during token validation: %s", exc)
+        raise UpstreamServiceError("Could not reach Microsoft Graph to verify token") from exc
 
-    return _extract_principal(claims)
+    if response.status_code == 401:
+        logger.info("Token validation failed: Microsoft Graph rejected the token")
+        raise UnauthorizedError("Invalid or expired access token")
+    if response.status_code != 200:
+        logger.warning(
+            "Microsoft Graph returned unexpected status %s during token validation",
+            response.status_code,
+        )
+        raise UpstreamServiceError("Could not verify token with Microsoft Graph")
+
+    return _extract_principal(response.json())

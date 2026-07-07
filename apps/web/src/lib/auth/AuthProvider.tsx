@@ -8,13 +8,19 @@
  * only mounted when auth is enabled — so local dev (`NEXT_PUBLIC_AUTH_DISABLED`)
  * needs no Entra configuration and no MSAL provider.
  */
-import { PublicClientApplication } from "@azure/msal-browser";
+import {
+  InteractionRequiredAuthError,
+  InteractionStatus,
+  PublicClientApplication,
+} from "@azure/msal-browser";
 import { MsalProvider, useIsAuthenticated, useMsal } from "@azure/msal-react";
 import {
   createContext,
+  useEffect,
   useCallback,
   useContext,
   useMemo,
+  useRef,
   type ReactNode,
 } from "react";
 
@@ -57,9 +63,50 @@ const DISABLED_VALUE: AuthContextValue = {
 
 /** Bridges MSAL state into our AuthContext. Only mounted under MsalProvider. */
 function EntraAuthBridge({ children }: { children: ReactNode }) {
-  const { instance, accounts } = useMsal();
+  const { instance, accounts, inProgress } = useMsal();
   const isAuthenticated = useIsAuthenticated();
-  const active = accounts[0] ?? null;
+  const active = useMemo(() => instance.getActiveAccount() ?? accounts[0] ?? null, [instance, accounts]);
+  const redirectStartedRef = useRef(false);
+
+  useEffect(() => {
+    if (!instance.getActiveAccount() && accounts[0]) {
+      instance.setActiveAccount(accounts[0]);
+    }
+  }, [instance, accounts]);
+
+  const login = useCallback(() => {
+    if (inProgress !== InteractionStatus.None) return;
+    void instance.loginRedirect(loginRequest);
+  }, [instance, inProgress]);
+
+  const logout = useCallback(() => {
+    if (inProgress !== InteractionStatus.None) return;
+    void instance.logoutRedirect();
+  }, [instance, inProgress]);
+
+  const getToken = useCallback(async () => {
+    if (!active || inProgress !== InteractionStatus.None) return null;
+
+    try {
+      const result = await instance.acquireTokenSilent({ ...apiRequest, account: active });
+      return result.accessToken;
+    } catch (error) {
+      if (!(error instanceof InteractionRequiredAuthError)) {
+        throw error;
+      }
+
+      if (redirectStartedRef.current) return null;
+      redirectStartedRef.current = true;
+
+      try {
+        await instance.acquireTokenRedirect({ ...apiRequest, account: active });
+      } catch (redirectError) {
+        redirectStartedRef.current = false;
+        throw redirectError;
+      }
+      return null;
+    }
+  }, [active, inProgress, instance]);
 
   const value = useMemo<AuthContextValue>(() => {
     const account: AuthAccount | null = active
@@ -70,25 +117,11 @@ function EntraAuthBridge({ children }: { children: ReactNode }) {
       isAuthenticated,
       authDisabled: false,
       account,
-      login: () => {
-        void instance.loginRedirect(loginRequest);
-      },
-      logout: () => {
-        void instance.logoutRedirect();
-      },
-      getToken: async () => {
-        if (!active) return null;
-        try {
-          const result = await instance.acquireTokenSilent({ ...apiRequest, account: active });
-          return result.accessToken;
-        } catch {
-          // Silent acquisition failed — fall back to interactive.
-          await instance.acquireTokenRedirect({ ...apiRequest, account: active });
-          return null;
-        }
-      },
+      login,
+      logout,
+      getToken,
     };
-  }, [instance, active, isAuthenticated]);
+  }, [active, getToken, isAuthenticated, login, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -36,3 +36,4 @@ test-results/
 # ---- Build / local db ----
 *.sqlite3
 *.db
+architecture-101.txt
