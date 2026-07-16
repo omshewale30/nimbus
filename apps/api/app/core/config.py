@@ -59,6 +59,8 @@ class Settings(BaseSettings):
     admin_group_id: str = ""
     # Entra v2 issuer & JWKS are derived from the tenant id.
     jwt_leeway_seconds: int = 60
+    # Comma-separated emails allowed to propose/edit content outside git (future use).
+    editor_emails: str = ""
 
     # ---- Database ----
     database_url: str = "sqlite+pysqlite:///./local.db"
@@ -90,6 +92,10 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_allow_origins.split(",") if o.strip()]
+
+    @property
+    def editor_emails_list(self) -> list[str]:
+        return [e.strip().lower() for e in self.editor_emails.split(",") if e.strip()]
 
     @property
     def entra_issuer(self) -> str:

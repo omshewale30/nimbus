@@ -33,7 +33,7 @@ university's data boundary.
 ## Not approved
 
 - Any workflow involving data classified above moderate sensitivity —
-  see [What data can I put into Copilot?](/g/sensitive-data)
+  see [What data can I put into Copilot?](/guides/sensitive-data)
 
 ## Getting access
 

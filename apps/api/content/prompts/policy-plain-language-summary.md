@@ -8,6 +8,7 @@ tags: [policy, operations, writing]
 related_slugs: [sensitive-data]
 attributes:
   audience: Operations staff
+  department: Operations
   tool: Microsoft 365 Copilot
   prompt: |
     Summarize the policy text below for staff who need to follow it but
@@ -20,6 +21,11 @@ attributes:
 
     Policy text:
     [PASTE THE POLICY TEXT HERE]
+  example_input: The full text of a revised travel reimbursement policy,
+    including a new receipt threshold and an effective date.
+  example_output: A two-sentence summary, a "what you must do" bullet list
+    (e.g. "keep receipts for purchases over $25"), a "what changed" note
+    about the new threshold, and the effective date quoted exactly.
 ---
 
 ## When to use this

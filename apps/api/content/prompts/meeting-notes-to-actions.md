@@ -9,6 +9,7 @@ related_slugs: [sensitive-data]
 featured: true
 attributes:
   audience: All staff
+  department: All
   tool: Microsoft 365 Copilot
   prompt: |
     Below are my raw notes from a meeting. Extract:
@@ -21,6 +22,12 @@ attributes:
 
     Notes:
     [PASTE YOUR NOTES HERE]
+  example_input: "Discussed Q3 close timeline. Sarah will send the revised
+    checklist by Friday. Still need to decide who owns the vendor
+    reconciliation step."
+  example_output: A decisions line noting the Q3 close timeline was
+    discussed, an action-item table row (task, owner Sarah, due Friday),
+    and an open question flagging the unassigned vendor reconciliation owner.
 ---
 
 ## When to use this

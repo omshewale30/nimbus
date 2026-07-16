@@ -9,6 +9,7 @@ related_slugs: [copilot-excel-budget-variance, sensitive-data]
 featured: true
 attributes:
   audience: Finance staff
+  department: Finance
   tool: Microsoft 365 Copilot
   prompt: |
     I'm preparing the monthly budget-to-actuals review for [DEPARTMENT].
@@ -30,7 +31,7 @@ attributes:
 ## When to use this
 
 After you've identified variances (see the
-[Copilot in Excel variance playbook](/g/copilot-excel-budget-variance)) and
+[Copilot in Excel variance playbook](/p/copilot-excel-budget-variance)) and
 need the written explanation that goes into the close package.
 
 ## How to adapt it

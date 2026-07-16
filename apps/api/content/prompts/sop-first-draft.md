@@ -8,6 +8,7 @@ tags: [operations, documentation, process]
 related_slugs: [policy-plain-language-summary]
 attributes:
   audience: Operations staff
+  department: Operations
   tool: Microsoft 365 Copilot
   prompt: |
     I'm going to describe, informally, how my team performs a task. Turn it
@@ -24,6 +25,14 @@ attributes:
 
     Here's how it works today:
     [DESCRIBE THE PROCESS IN YOUR OWN WORDS]
+  example_input: "When a PO comes in over $10k, I forward it to my
+    supervisor for sign-off, then once approved I enter it in the system
+    and email the vendor. If it's rejected I'm not really sure what
+    happens next."
+  example_output: A structured SOP with purpose, roles (requester,
+    supervisor), prerequisites, numbered steps (forward, approve, enter,
+    email), and an "Open questions" entry flagging the undefined
+    rejection path.
 ---
 
 ## When to use this

@@ -7,6 +7,7 @@ summary: Get a plain-English explanation of what an inherited spreadsheet
 tags: [excel, finance, spreadsheets]
 attributes:
   audience: Finance staff
+  department: Finance
   tool: Microsoft 365 Copilot
   prompt: |
     Explain this Excel formula step by step in plain English:
@@ -19,6 +20,10 @@ attributes:
        assumptions, error values, edge cases)
     3. Suggest a clearer rewrite using modern functions (XLOOKUP, LET,
        IFERROR) and explain what the rewrite changes
+  example_input: "=VLOOKUP(A2,Budget!$A:$D,4,FALSE)"
+  example_output: A plain-English walkthrough of the lookup, a note that
+    VLOOKUP breaks if columns are inserted before column D, and a suggested
+    rewrite using XLOOKUP with IFNA for a friendlier error.
 ---
 
 ## When to use this

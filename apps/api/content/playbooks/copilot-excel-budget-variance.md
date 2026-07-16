@@ -13,7 +13,7 @@ published: true
 
 > **Before you start:** this playbook assumes your workbook contains no
 > student records or other sensitive data. If you're not sure, read
-> [What data can I put into Copilot?](/g/sensitive-data) first.
+> [What data can I put into Copilot?](/guides/sensitive-data) first.
 
 ## What you'll do
 

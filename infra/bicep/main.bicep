@@ -64,6 +64,12 @@ param foundryEndpoint string = ''
 param foundryDeploymentName string = 'gpt-4o-mini'
 param foundryApiVersion string = '2024-08-01-preview'
 
+@description('Embedding deployment name for RAG (must match the foundry deployment).')
+param foundryEmbeddingDeploymentName string = 'text-embedding-3-small'
+
+@description('Comma-separated emails allowed to propose/edit content outside git (future use).')
+param editorEmails string = ''
+
 @description('Provision Azure AI Search.')
 param enableSearch bool = false
 
@@ -213,6 +219,8 @@ module apiApp 'modules/container-app.bicep' = {
       { name: 'AZURE_AI_FOUNDRY_ENDPOINT', value: foundryEndpoint }
       { name: 'AZURE_AI_FOUNDRY_DEPLOYMENT_NAME', value: foundryDeploymentName }
       { name: 'AZURE_AI_FOUNDRY_API_VERSION', value: foundryApiVersion }
+      { name: 'AZURE_AI_FOUNDRY_EMBEDDING_DEPLOYMENT_NAME', value: foundryEmbeddingDeploymentName }
+      { name: 'EDITOR_EMAILS', value: editorEmails }
       { name: 'AZURE_SEARCH_ENDPOINT', value: search.?outputs.searchEndpoint ?? '' }
       // Tells DefaultAzureCredential which user-assigned identity to use.
       { name: 'AZURE_CLIENT_ID', value: identity.outputs.clientId }

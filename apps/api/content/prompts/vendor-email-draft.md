@@ -8,6 +8,7 @@ tags: [procurement, email, writing]
 related_slugs: [sensitive-data]
 attributes:
   audience: Procurement and AP staff
+  department: Procurement
   tool: Microsoft 365 Copilot
   prompt: |
     Draft a professional email to a vendor. Context:
@@ -19,6 +20,12 @@ attributes:
     Tone: courteous but firm. Keep it under 150 words, lead with the ask,
     and end with a clear next step. Do not apologize on our behalf or
     concede fault.
+  example_input: "Issue: late delivery. Key facts: PO 48213, expected
+    June 1, still not received. What I need: shipped by June 10 with
+    tracking. Relationship: long-term vendor, first late order."
+  example_output: A short, firm-but-courteous email referencing PO 48213,
+    noting the missed June 1 date, asking for shipment with tracking by
+    June 10, and closing with a clear next step if the date slips again.
 ---
 
 ## When to use this

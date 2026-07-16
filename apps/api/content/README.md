@@ -65,6 +65,8 @@ attributes:
     The literal prompt    # Copy button puts on the clipboard
     text, verbatim.
   audience: Finance staff # who this prompt is for (shown as a chip)
+  department: Finance     # primary F&O department this prompt serves
+                          # (Finance | Procurement | Operations | All)
   tool: Microsoft 365 Copilot   # where to paste it
   example_input: Optional description of what to feed it
   example_output: Optional sample of what a good result looks like
