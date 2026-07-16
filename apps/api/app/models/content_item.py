@@ -1,6 +1,6 @@
-"""Curated content: playbooks, tool-registry entries, and risk guidance.
+"""Curated content: playbooks, tool-registry entries, risk guidance, and prompts.
 
-One table for all three kinds — browse pages filter by `kind`, and the ask
+One table for all kinds — browse pages filter by `kind`, and the ask
 endpoint retrieves across all kinds at once. Rows are never edited at runtime:
 they mirror the markdown files under `apps/api/content/` (git is the source of
 truth), synced by `app.services.content_sync`.
@@ -15,7 +15,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 
-VALID_KINDS = ("playbook", "tool", "guidance")
+VALID_KINDS = ("playbook", "tool", "guidance", "prompt")
 
 # JSONB on Postgres, plain JSON elsewhere (SQLite in tests).
 _JsonCol = JSON().with_variant(JSONB(), "postgresql")

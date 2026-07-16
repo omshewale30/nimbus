@@ -37,3 +37,6 @@ test-results/
 *.sqlite3
 *.db
 architecture-101.txt
+
+# Local per-service deployment state (contains resource names/endpoints)
+infra/scripts/.state/

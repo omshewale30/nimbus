@@ -36,20 +36,95 @@ Push to `main` or run the **Deploy (dev)** workflow manually. It:
 3. Builds and pushes the API and web images to ACR.
 4. Rolls out the new images with `az containerapp update`.
 
-### Manual deploy (from a workstation)
+CI uses the legacy all-in-one `infra/bicep/main.bicep` (subscription-scoped; it
+creates the resource group itself). Manual deploys use the per-service flow
+below instead.
+
+### Manual per-service deploy (from a workstation)
+
+Manual deploys are one-service-per-run into a resource group **you create
+yourself** — nothing in `infra/bicep/deploy/` or `infra/scripts/` ever creates
+a resource group. Each script wraps `az deployment group create` around one
+group-scoped template in `infra/bicep/deploy/`, which reuses the modules in
+`infra/bicep/modules/`. All deployments are idempotent: re-running a script
+updates the service in place.
+
+**How dependencies are handled.** Resource names are deterministic and derived
+from `<prefix>-<env>` (e.g. `id-nimbus-dev`, `acrnimbusdev`, `pg-nimbus-dev`),
+so each template looks up the services it depends on by name with `existing`
+references — no outputs need to be threaded between runs. ACR, storage, Key
+Vault, PostgreSQL, search, and Foundry names are globally unique across Azure:
+if a name is already taken by someone else, pick a different `--prefix` (use it
+consistently for every script). Exception: the default ACR name `acrnimbusdev`
+is known to be taken, so pass `--acr-name` to `deploy-registry.sh` — the api
+and web app scripts then pick the real name up from the state file (or accept
+their own `--acr-name`). The only cross-service inputs you pass are
+secrets (the DB password, needed by both `postgres` and `key-vault` to compose
+the `database-url` secret) and container images. Every script also saves its
+deployment outputs to `infra/scripts/.state/<rg>/<service>.env` (gitignored);
+`deploy-api-app.sh` reads the search endpoint from there automatically if you
+deployed search.
+
+**Deployment order** (and why):
+
+| # | Script | Why here |
+| --- | --- | --- |
+| 1 | `deploy-identity.sh` | Everything else grants RBAC roles to this identity. |
+| 2 | `deploy-observability.sh` | Key Vault seeds the App Insights connection string; the Container Apps env wires logs to Log Analytics. |
+| 3 | `deploy-registry.sh` | Needs identity (AcrPull). Apps pull images from it. |
+| 4 | `deploy-storage.sh` | Needs identity (Blob Data Contributor). |
+| 5 | `deploy-postgres.sh` | Independent, but must exist before Key Vault seeds `database-url`. |
+| 6 | `deploy-key-vault.sh` | Needs identity + observability + postgres to compose its seed secrets. |
+| 7 | `deploy-search.sh` | Optional; needs identity. Skip if you don't need RAG. |
+| 8 | `deploy-container-apps-env.sh` | Needs observability (Log Analytics keys). |
+| 9 | `deploy-api-app.sh` | Needs 1–6 and 8 (and optionally 7). |
+| 10 | `deploy-web-app.sh` | Needs 1, 3, 8. |
+
+Steps 2–5 are mutually independent — the order among them doesn't matter as
+long as identity is first and Key Vault comes after 2 and 5.
+
+**Full sequence for a fresh `rg-nimbus`:**
 
 ```bash
 az login
 az account set --subscription <sub-id>
-export SQL_ADMIN_PASSWORD='...'   # not stored anywhere
-az deployment sub create \
-  --location eastus \
-  --template-file infra/bicep/main.bicep \
-  --parameters infra/bicep/parameters/dev.bicepparam \
-  --parameters apiImage=mcr.microsoft.com/k8se/quickstart:latest \
-               webImage=mcr.microsoft.com/k8se/quickstart:latest
-# then build/push images to the created ACR and `az containerapp update`.
+
+# 0. Resource group — created manually, once:
+az group create --name rg-nimbus --location eastus
+
+export SQL_ADMIN_PASSWORD='<url-safe-alphanumeric>'   # not stored anywhere
+
+infra/scripts/deploy-identity.sh            -g rg-nimbus
+infra/scripts/deploy-observability.sh       -g rg-nimbus
+infra/scripts/deploy-registry.sh            -g rg-nimbus --acr-name acrnimbusdev01
+infra/scripts/deploy-storage.sh             -g rg-nimbus
+infra/scripts/deploy-postgres.sh            -g rg-nimbus
+infra/scripts/deploy-key-vault.sh           -g rg-nimbus
+# optional: infra/scripts/deploy-search.sh  -g rg-nimbus
+infra/scripts/deploy-container-apps-env.sh  -g rg-nimbus
+
+# First run: bootstrap with a public image (ACR is empty), then build/push and
+# re-run with the real images.
+infra/scripts/deploy-api-app.sh -g rg-nimbus \
+  --api-image mcr.microsoft.com/k8se/quickstart:latest \
+  --foundry-endpoint "$AZURE_AI_FOUNDRY_ENDPOINT" \
+  --admin-group-id "$ADMIN_GROUP_ID"
+infra/scripts/deploy-web-app.sh -g rg-nimbus \
+  --web-image mcr.microsoft.com/k8se/quickstart:latest
+
+# Build/push real images (ACR name is in the registry outputs / state file):
+ACR=$(sed -n 's/^registryName=//p' infra/scripts/.state/rg-nimbus/registry.env)
+az acr build -r "$ACR" -t nimbus-api:latest apps/api
+az acr build -r "$ACR" -t nimbus-web:latest apps/web
+infra/scripts/deploy-api-app.sh -g rg-nimbus --api-image "$ACR.azurecr.io/nimbus-api:latest" \
+  --foundry-endpoint "$AZURE_AI_FOUNDRY_ENDPOINT" --admin-group-id "$ADMIN_GROUP_ID"
+infra/scripts/deploy-web-app.sh -g rg-nimbus --web-image "$ACR.azurecr.io/nimbus-web:latest"
 ```
+
+Every script supports `-p/--prefix` (default `nimbus`), `-e/--environment`
+(`dev`|`prod`, default `dev`), `-l/--location` (defaults to the resource
+group's location), and `--help` for the full option list. To update a single
+service later, just re-run its script.
 
 Apply database migrations after the first deploy (from a machine that can reach
 Azure PostgreSQL, or a one-off job):

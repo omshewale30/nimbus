@@ -13,7 +13,8 @@ param appPrincipalId string
 @secure()
 param seedSecrets object = {}
 
-var keyVaultName = take('kv-${replace(namePrefix, '-', '')}${uniqueString(resourceGroup().id)}', 24)
+// Vault names are GLOBALLY unique across Azure; if taken, change namePrefix.
+var keyVaultName = take('kv-${replace(namePrefix, '-', '')}', 24)
 
 // Built-in role: Key Vault Secrets User
 var secretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'

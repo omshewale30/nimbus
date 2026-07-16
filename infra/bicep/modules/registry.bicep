@@ -8,13 +8,16 @@ param tags object = {}
 @description('Principal id of the managed identity that pulls images.')
 param appPrincipalId string
 
-var registryName = take('acr${replace(namePrefix, '-', '')}${uniqueString(resourceGroup().id)}', 50)
+@description('Optional explicit registry name. Registry names are GLOBALLY unique across Azure; override when the default acr<prefix><env> is taken.')
+param registryName string = ''
+
+var resolvedRegistryName = empty(registryName) ? take('acr${replace(namePrefix, '-', '')}', 50) : registryName
 
 // Built-in role: AcrPull
 var acrPullRoleId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
 
 resource registry 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = {
-  name: registryName
+  name: resolvedRegistryName
   location: location
   tags: tags
   sku: {

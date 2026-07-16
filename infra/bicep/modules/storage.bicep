@@ -11,7 +11,8 @@ param appPrincipalId string
 @description('Blob container name for uploads.')
 param containerName string = 'uploads'
 
-var storageAccountName = take('st${replace(namePrefix, '-', '')}${uniqueString(resourceGroup().id)}', 24)
+// Storage account names are GLOBALLY unique across Azure; if taken, change namePrefix.
+var storageAccountName = take('st${replace(namePrefix, '-', '')}', 24)
 
 // Built-in role: Storage Blob Data Contributor
 var blobContributorRoleId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'

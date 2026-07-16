@@ -1,6 +1,12 @@
-// Top-level deployment for Nimbus.
+// LEGACY all-in-one deployment for Nimbus (still used by CI: deploy-dev.yml).
 //
 // Subscription-scoped: creates the resource group and all resources within it.
+//
+// For manual, per-service deployments into an EXISTING resource group, use the
+// group-scoped entrypoints in infra/bicep/deploy/ via the scripts in
+// infra/scripts/ instead — see docs/runbook.md. Keep this file in sync with
+// those entrypoints if you change a module's wiring.
+//
 // Deploy with:
 //   az deployment sub create \
 //     --location eastus \

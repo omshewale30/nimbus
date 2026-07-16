@@ -8,7 +8,8 @@ param tags object = {}
 @description('Principal id of the managed identity that queries the index.')
 param appPrincipalId string
 
-var searchName = take('srch-${replace(namePrefix, '-', '')}${uniqueString(resourceGroup().id)}', 60)
+// Search service names are GLOBALLY unique across Azure; if taken, change namePrefix.
+var searchName = take('srch-${replace(namePrefix, '-', '')}', 60)
 
 // Built-in role: Search Index Data Reader
 var searchReaderRoleId = '1407120a-92aa-4202-b7e9-c0e197c71c8f'

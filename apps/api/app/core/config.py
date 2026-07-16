@@ -71,6 +71,8 @@ class Settings(BaseSettings):
     azure_ai_foundry_project_name: str = ""
     azure_ai_foundry_deployment_name: str = ""
     azure_ai_foundry_api_version: str = "2024-08-01-preview"
+    # Embedding deployment for RAG (pgvector); empty disables real embeddings.
+    azure_ai_foundry_embedding_deployment_name: str = ""
 
     # ---- Azure Blob Storage ----
     azure_storage_account_url: str = ""

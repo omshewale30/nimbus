@@ -167,19 +167,36 @@ Infrastructure is defined in [`infra/bicep`](infra/bicep). It provisions a
 resource group's worth of services (Container Apps, ACR, Key Vault, Azure PostgreSQL,
 Storage, App Insights). See [Deployment overview](#deployment-overview).
 
+- `infra/bicep/modules/` — one reusable module per service.
+- `infra/bicep/deploy/` — group-scoped entrypoints, one per service, for
+  deploying into an **existing** resource group one service at a time.
+- `infra/bicep/main.bicep` — legacy all-in-one, subscription-scoped template
+  (creates the resource group itself); still used by CI.
+- `infra/scripts/` — `deploy-<service>.sh` wrappers around
+  `az deployment group create`, one service per run.
+
 ## Deployment overview
 
-Deployment is via GitHub Actions using **OIDC federation** (no stored Azure
-passwords). See [`.github/workflows/deploy-dev.yml`](.github/workflows/deploy-dev.yml)
-and [`docs/runbook.md`](docs/runbook.md).
+CI deployment is via GitHub Actions using **OIDC federation** (no stored Azure
+passwords) and the legacy all-in-one template. See
+[`.github/workflows/deploy-dev.yml`](.github/workflows/deploy-dev.yml).
+
+Manual deployment is **per-service into a manually created resource group**:
+create the group once with `az group create`, then run one script per service
+in dependency order (identity → observability/registry/storage/postgres →
+key-vault → container-apps-env → api/web apps). Each script is idempotent —
+re-run it to update just that service.
 
 ```bash
-# One-time, manual, from a workstation (alternative to CI):
-az deployment sub create \
-  --location eastus \
-  --template-file infra/bicep/main.bicep \
-  --parameters infra/bicep/parameters/dev.bicepparam
+az group create --name rg-nimbus --location eastus   # manual, once
+export SQL_ADMIN_PASSWORD='...'
+infra/scripts/deploy-identity.sh -g rg-nimbus
+infra/scripts/deploy-observability.sh -g rg-nimbus
+# ... see docs/runbook.md for the full order and options
 ```
+
+Full step-by-step flow, dependency rationale, and options:
+[`docs/runbook.md`](docs/runbook.md).
 
 ## Creating a new project from the template
 

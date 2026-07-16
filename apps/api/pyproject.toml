@@ -11,6 +11,8 @@ dependencies = [
     "python-json-logger>=2.0",
     "sqlalchemy>=2.0",
     "alembic>=1.13",
+    # Vector type + operators for RAG retrieval (services/rag)
+    "pgvector>=0.3",
     # Frontmatter parsing for git-authored content (services/content_sync.py)
     "pyyaml>=6.0",
     # JWT validation for Microsoft Entra ID

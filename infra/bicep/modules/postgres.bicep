@@ -18,7 +18,8 @@ param adminPassword string
 
 param databaseName string = 'appdb'
 
-var serverName = 'pg-${namePrefix}-${uniqueString(resourceGroup().id)}'
+// Server names are GLOBALLY unique (they form the public FQDN); if taken, change namePrefix.
+var serverName = 'pg-${namePrefix}'
 
 resource server 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' = {
   name: serverName
@@ -52,6 +53,18 @@ resource database 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2024-08-0
     charset: 'UTF8'
     collation: 'en_US.utf8'
   }
+}
+
+// Allowlist the pgvector extension so migrations can `CREATE EXTENSION vector`
+// (Flexible Server rejects extensions not listed in azure.extensions).
+resource extensionsAllowlist 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2024-08-01' = {
+  parent: server
+  name: 'azure.extensions'
+  properties: {
+    value: 'VECTOR'
+    source: 'user-override'
+  }
+  dependsOn: [database]
 }
 
 // Allow other Azure services (e.g. Container Apps) to reach the server.

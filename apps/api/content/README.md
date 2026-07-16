@@ -1,7 +1,7 @@
 # Nimbus content
 
-Git-first content model: every playbook, tool-registry entry, and guidance
-page is a markdown file in this directory. **Git is the source of truth** —
+Git-first content model: every playbook, tool-registry entry, guidance
+page, and reusable prompt is a markdown file in this directory. **Git is the source of truth** —
 the API mirrors these files into the `content_items` table at startup (and via
 `make content-sync`). Merging to `main` and deploying *is* publishing.
 
@@ -16,6 +16,7 @@ content/
   playbooks/   kind: playbook  — workflow-specific how-tos for approved tools
   tools/       kind: tool      — the AI tool & pilot registry
   guidance/    kind: guidance  — plain-language acceptable-use guidance
+  prompts/     kind: prompt    — reusable copy-paste prompts for the library
 ```
 
 The subdirectories are a convention for humans; the sync only reads the
@@ -28,7 +29,7 @@ YAML frontmatter followed by a markdown body:
 ```markdown
 ---
 slug: copilot-excel-budget-variance   # required; unique, lowercase kebab-case
-kind: playbook                        # required; playbook | tool | guidance
+kind: playbook                        # required; playbook | tool | guidance | prompt
 title: Analyze a budget variance report with Copilot in Excel   # required
 summary: One or two sentences shown on cards and used by the ask endpoint to
   decide relevance.                   # required
@@ -55,6 +56,22 @@ attributes:
   owner_contact: someone@unc.edu
   url: https://example.com
 ```
+
+### `attributes` for `kind: prompt`
+
+```yaml
+attributes:
+  prompt: |               # required for prompts; the copy-paste text the
+    The literal prompt    # Copy button puts on the clipboard
+    text, verbatim.
+  audience: Finance staff # who this prompt is for (shown as a chip)
+  tool: Microsoft 365 Copilot   # where to paste it
+  example_input: Optional description of what to feed it
+  example_output: Optional sample of what a good result looks like
+```
+
+The markdown body of a prompt holds usage notes: when to use it, how to
+adapt the placeholders, and what to double-check in the output.
 
 ## Rules enforced by the sync
 
