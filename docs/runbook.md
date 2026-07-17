@@ -133,6 +133,39 @@ Azure PostgreSQL, or a one-off job):
 alembic upgrade head
 ```
 
+## RAG / retrieval operations
+
+The `/ask` endpoint retrieves from **pgvector** on the existing PostgreSQL
+server — Azure AI Search is not used.
+
+**Embedding deployment (one-time, manual).** The Foundry/AI resource is
+provisioned outside this repo. In Azure AI Foundry, create a
+`text-embedding-3-small` model deployment on the resource, then set
+`AZURE_AI_FOUNDRY_EMBEDDING_DEPLOYMENT_NAME` (accepted alias for the chat
+deployment: `AZURE_AI_FOUNDRY_CHAT_DEPLOYMENT_NAME`) on the api app.
+
+**pgvector allowlisting.** On Azure Database for PostgreSQL Flexible Server the
+`vector` extension must be allowlisted before `CREATE EXTENSION` works.
+`infra/bicep/modules/postgres.bicep` sets the `azure.extensions = VECTOR`
+server configuration; migration `0003_pgvector` then runs
+`CREATE EXTENSION IF NOT EXISTS vector`. Locally the
+`pgvector/pgvector:pg16` docker image ships it pre-installed.
+
+**Editor gating.** Set `EDITOR_EMAILS` (comma-separated, case-insensitive) to
+the people allowed to triage/edit projects. The local dev principal
+(`AUTH_MODE=disabled`) is always an editor.
+
+**Reindexing.** The retrieval index (`content_chunks`) refreshes incrementally
+by checksum at API startup and inline on project writes. To force a manual
+refresh: `make reindex`. **After switching AI providers or embedding models**
+the checksums still match, so old vectors are NOT re-embedded — wipe the index
+first:
+
+```bash
+docker compose exec db psql -U nimbus -d nimbus -c "DELETE FROM content_chunks;"
+make reindex   # or restart the api; startup reindex rebuilds it
+```
+
 ## Rotate secrets
 
 - **SQL admin password**: update the GitHub secret `SQL_ADMIN_PASSWORD`, then
@@ -181,6 +214,8 @@ Decode a token at <https://jwt.ms> to inspect `aud`, `iss`, `roles`, `groups`.
 | `403` from Foundry | The managed identity lacks a role on the AI resource, or the wrong `AZURE_CLIENT_ID` is set. Grant `Cognitive Services User`. |
 | SDK / signature errors | Confirm the installed `openai`/`azure-ai-*` version matches `foundry_provider._invoke_model`; update that one adapter method. |
 | Deployment name errors | `AZURE_AI_FOUNDRY_DEPLOYMENT_NAME` must match a real model deployment. |
+| `AZURE_AI_FOUNDRY_EMBEDDING_DEPLOYMENT_NAME is not configured` | Create the embedding deployment and set the env var (see RAG operations above). |
+| `/ask` always returns the fallback answer | Retrieval index empty or embedded with a different provider/model — wipe `content_chunks` and `make reindex`. |
 
 To bisect, set `AI_PROVIDER=mock` — if `/chat` then works, the issue is isolated
 to the Foundry integration.

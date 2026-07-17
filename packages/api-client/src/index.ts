@@ -154,6 +154,24 @@ export interface AskResponse {
   model?: string | null;
 }
 
+export interface TopCopiedItem {
+  slug: string;
+  title: string;
+  copies: number;
+}
+
+export interface InsightsSummary {
+  publishedGuides: number;
+  publishedPrompts: number;
+  projectsTotal: number;
+  projectsByStatus: Record<ProjectStatus, number>;
+  intakesLast30d: number;
+  copiesLast30d: number;
+  asksLast30d: number;
+  topCopied: TopCopiedItem[];
+  windowDays: number;
+}
+
 export interface ApiErrorBody {
   error: {
     code: string;
@@ -196,6 +214,7 @@ export interface ApiClient {
   createProject(payload: ProjectWritePayload): Promise<Project>;
   updateProject(id: number, payload: ProjectWritePayload): Promise<Project>;
   ask(question: string): Promise<AskResponse>;
+  getInsightsSummary(): Promise<InsightsSummary>;
 }
 
 export function createApiClient(options: ApiClientOptions): ApiClient {
@@ -287,5 +306,6 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         method: "POST",
         body: JSON.stringify({ question }),
       }),
+    getInsightsSummary: () => request<InsightsSummary>("/api/v1/insights/summary"),
   };
 }

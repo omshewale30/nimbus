@@ -14,6 +14,7 @@ import type {
   ContentEventType,
   ContentListFilters,
   ContentListResponse,
+  InsightsSummary,
   IntakePayload,
   MeResponse,
   Project,
@@ -56,6 +57,7 @@ export interface ApiClient {
   createProject(payload: ProjectWritePayload): Promise<Project>;
   updateProject(id: number, payload: ProjectWritePayload): Promise<Project>;
   ask(question: string): Promise<AskResponse>;
+  getInsightsSummary(): Promise<InsightsSummary>;
 }
 
 export function createApiClient(options: ApiClientOptions): ApiClient {
@@ -148,5 +150,6 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         method: "POST",
         body: JSON.stringify({ question }),
       }),
+    getInsightsSummary: () => request<InsightsSummary>("/api/v1/insights/summary"),
   };
 }

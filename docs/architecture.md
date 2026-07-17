@@ -64,11 +64,46 @@ The frontend may *hint* at authorization (e.g. hide an admin link), but the
 backend is the only enforcement point. See
 [`adr/0002-backend-only-ai-access.md`](adr/0002-backend-only-ai-access.md).
 
+## RAG flow (`/ask`)
+
+Retrieval runs on **pgvector** over the existing Postgres — no Azure AI Search.
+Sources are the git-authored content and the project inventory, chunked and
+embedded into `content_chunks` (1536-dim vectors):
+
+```mermaid
+flowchart LR
+    subgraph sources
+      MD[content/*.md] -->|content_sync| CI[(content_items)]
+      PF[/propose + editor CRUD/] --> PR[(projects)]
+    end
+    CI -->|"indexer: chunk by heading"| CH[(content_chunks\nvector 1536)]
+    PR -->|"indexer: synthetic doc"| CH
+    IDX[embed via AIProvider.embed] -.-> CH
+
+    Q[POST /ask] --> R{get_retriever}
+    R -->|postgresql| PGR["PgVectorRetriever\ncosine top-k + floor"]
+    R -->|sqlite/tests| MR[MockRetriever keyword]
+    PGR & MR --> CTX[grounded prompt + citations]
+    CTX --> CHAT[AIProvider.chat]
+    CHAT --> A["answer + citations[]"]
+```
+
+The index is refreshed incrementally by checksum: at API startup (after the
+content sync), inline from the project routes, and manually via `make reindex`.
+If retrieval finds nothing above the similarity floor, `/ask` returns a
+fallback answer without calling the LLM. On SQLite (tests) the keyword
+`MockRetriever` keeps the whole route testable without a vector extension.
+
 ## Backend module map
 
 - `core/` — config, structured logging, JWT security, error envelope, middleware.
-- `api/v1/` — router + routes (`health`, `me`, `chat`, `admin`).
-- `services/ai/` — `AIProvider` abstraction, mock + Foundry providers, factory.
+- `api/v1/` — router + routes (`health`, `me`, `chat`, `content`, `projects`,
+  `ask`, `insights`, `admin`).
+- `services/ai/` — `AIProvider` abstraction (chat + embeddings), mock + Foundry
+  providers, factory.
+- `services/rag/` — `indexer` (chunking + incremental embedding into
+  `content_chunks`) and `retriever` (`PgVectorRetriever` / `MockRetriever`).
+- `services/content_sync` — git-authored markdown → `content_items` at startup.
 - `services/storage`, `services/search`, `services/identity`, `services/audit`.
 - `db/` — SQLAlchemy engine/session, declarative base, Alembic migrations.
 - `models/`, `schemas/` — persistence models vs. API request/response models.

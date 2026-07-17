@@ -24,6 +24,7 @@ export function NavBar() {
           <Link href="/projects">Projects</Link>
           <Link href="/chat">Assistant</Link>
           <Link href="/ask">Ask</Link>
+          <Link href="/insights">Insights</Link>
           <Link href="/profile">Profile</Link>
           {isAuthenticated ? (
             <>

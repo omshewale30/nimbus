@@ -28,10 +28,28 @@ Container Apps**. Generated from the `ai-tool-starter` template.
 
 ## What this is
 
-A lightweight, opinionated baseline for internal AI tools. It wires up the seams
-that every such app needs — auth, API calls, AI service access, config, logging,
-testing, and deployment — without becoming a heavy framework. Copy it, delete
-what you don't need, and extend.
+Nimbus is an internal AI enablement hub for Finance & Operations staff: a
+browsable library of guides and reusable prompts, an AI project inventory fed by
+a lightweight intake workflow, a retrieval-grounded assistant with citations,
+and leadership usage metrics.
+
+### Surface map
+
+| Surface | Route(s) | Backed by |
+| --- | --- | --- |
+| Home (browse-first) | `/` | featured `content_items` |
+| Guides (playbooks, guidance, tools) | `/guides`, `/guides/[slug]` | `GET /api/v1/content` |
+| Prompt library (copy-to-clipboard) | `/prompts`, `/prompts/[slug]` | `GET /api/v1/content`, copy events |
+| Project inventory | `/projects`, `/projects/[id]` | `GET/POST/PATCH /api/v1/projects` |
+| Propose an AI use case (intake) | `/propose` | `POST /api/v1/projects/intake` |
+| Ask (RAG with citations) | `/ask` | `POST /api/v1/ask` + pgvector `content_chunks` |
+| Open-ended assistant | `/chat` | `POST /api/v1/chat` |
+| Insights (usage metrics) | `/insights` | `GET /api/v1/insights/summary` |
+
+Content is **git-first**: markdown under `apps/api/content/` is synced into the
+DB at startup (see `apps/api/content/README.md`). Retrieval for `/ask` uses
+**pgvector on the existing Postgres** (Azure AI Search stays off). Editor-only
+actions (triage, project edits) are gated by the `EDITOR_EMAILS` setting.
 
 ## Architecture overview
 

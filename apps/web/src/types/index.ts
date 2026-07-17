@@ -147,6 +147,25 @@ export interface ProjectListFilters {
   department?: string;
 }
 
+/** Leadership usage metrics (GET /insights/summary). */
+export interface TopCopiedItem {
+  slug: string;
+  title: string;
+  copies: number;
+}
+
+export interface InsightsSummary {
+  publishedGuides: number;
+  publishedPrompts: number;
+  projectsTotal: number;
+  projectsByStatus: Record<ProjectStatus, number>;
+  intakesLast30d: number;
+  copiesLast30d: number;
+  asksLast30d: number;
+  topCopied: TopCopiedItem[];
+  windowDays: number;
+}
+
 /** The backend's consistent error envelope. */
 export interface ApiErrorBody {
   error: {
