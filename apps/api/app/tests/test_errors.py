@@ -16,7 +16,7 @@ def test_not_found_envelope(client):
 
 
 def test_validation_error_envelope(client):
-    resp = client.post("/api/v1/chat", json={})  # missing required 'message'
+    resp = client.post("/api/v1/ask", json={})  # missing required 'question'
     assert resp.status_code == 422
     _assert_envelope(resp.json(), "validation_error")
 

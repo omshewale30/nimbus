@@ -11,11 +11,6 @@ export interface MeResponse {
   isDevPrincipal: boolean;
 }
 
-export interface ChatResponse {
-  response: string;
-  model?: string | null;
-}
-
 /** One of the git-authored content kinds. */
 export type ContentKind = "playbook" | "tool" | "guidance" | "prompt";
 

@@ -9,7 +9,6 @@
 import type {
   ApiErrorBody,
   AskResponse,
-  ChatResponse,
   ContentDetail,
   ContentEventType,
   ContentListFilters,
@@ -47,7 +46,6 @@ export interface ApiClientOptions {
 
 export interface ApiClient {
   getMe(): Promise<MeResponse>;
-  chat(message: string): Promise<ChatResponse>;
   listContent(filters?: ContentListFilters): Promise<ContentListResponse>;
   getContent(slug: string): Promise<ContentDetail>;
   recordContentEvent(slug: string, eventType: ContentEventType): Promise<void>;
@@ -101,11 +99,6 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
 
   return {
     getMe: () => request<MeResponse>("/api/v1/me"),
-    chat: (message: string) =>
-      request<ChatResponse>("/api/v1/chat", {
-        method: "POST",
-        body: JSON.stringify({ message }),
-      }),
     listContent: (filters = {}) => {
       const params = new URLSearchParams();
       if (filters.kind) params.set("kind", filters.kind);

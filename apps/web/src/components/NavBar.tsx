@@ -22,7 +22,6 @@ export function NavBar() {
           <Link href="/guides">Guides</Link>
           <Link href="/prompts">Prompts</Link>
           <Link href="/projects">Projects</Link>
-          <Link href="/chat">Assistant</Link>
           <Link href="/ask">Ask</Link>
           <Link href="/insights">Insights</Link>
           <Link href="/profile">Profile</Link>

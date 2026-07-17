@@ -19,21 +19,20 @@ function mockFetch(handler: (url: string, init?: RequestInit) => Response) {
 
 describe("createApiClient", () => {
   it("attaches the bearer token and parses the response", async () => {
-    const fetchImpl = mockFetch(() => jsonResponse({ response: "hi", model: "mock-1" }));
+    const fetchImpl = mockFetch(() => jsonResponse({ subject: "s" }));
     const client = createApiClient({
       baseUrl: "http://api.test",
       getToken: async () => "TOKEN123",
       fetchImpl: fetchImpl as unknown as typeof fetch,
     });
 
-    const result = await client.chat("hello");
+    const result = await client.getMe();
 
-    expect(result.response).toBe("hi");
+    expect(result.subject).toBe("s");
     const call = fetchImpl.mock.calls[0]!;
-    expect(call[0]).toBe("http://api.test/api/v1/chat");
+    expect(call[0]).toBe("http://api.test/api/v1/me");
     const headers = new Headers(call[1]?.headers);
     expect(headers.get("Authorization")).toBe("Bearer TOKEN123");
-    expect(call[1]?.method).toBe("POST");
   });
 
   it("omits the Authorization header when there is no token", async () => {

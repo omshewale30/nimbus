@@ -38,7 +38,7 @@ export default function HomePage() {
         <ButtonLink href="/ask">Ask Nimbus</ButtonLink>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <CardLink href="/guides">
           <h2 className="text-lg">Guides</h2>
           <p className="text-sm text-muted">Step-by-step playbooks and acceptable-use guidance.</p>
@@ -50,10 +50,6 @@ export default function HomePage() {
         <CardLink href="/projects">
           <h2 className="text-lg">Project inventory</h2>
           <p className="text-sm text-muted">AI projects and pilots across F&amp;O: status, owners, value.</p>
-        </CardLink>
-        <CardLink href="/chat">
-          <h2 className="text-lg">Assistant</h2>
-          <p className="text-sm text-muted">Ask a question and get pointed to the right resource.</p>
         </CardLink>
       </div>
 

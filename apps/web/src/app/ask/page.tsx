@@ -60,16 +60,7 @@ export default function AskPage() {
     <div className="space-y-6">
       <PageHeader
         title="Ask Nimbus"
-        description={
-          <>
-            Answers come only from what&apos;s in Nimbus: guides, prompts, and the project
-            inventory, with sources cited. For open-ended AI chat, use the{" "}
-            <Link className="font-medium text-navy underline decoration-carolina/40" href="/chat">
-              assistant
-            </Link>
-            .
-          </>
-        }
+        description="Answers come only from what's in Nimbus: guides, prompts, and the project inventory, with sources cited."
       />
 
       <Card>
