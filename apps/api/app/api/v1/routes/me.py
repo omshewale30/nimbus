@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends
 from app.core.config import Settings, get_settings
 from app.schemas.common import ErrorResponse
 from app.schemas.user import MeResponse
-from app.services.identity.current_user import CurrentUser
+from app.services.identity.current_user import CurrentUser, is_editor
 
 router = APIRouter(tags=["me"])
 
@@ -27,5 +27,6 @@ def me(user: CurrentUser, settings: Annotated[Settings, Depends(get_settings)]) 
         roles=user.roles,
         groups=user.groups,
         isAdmin=is_admin,
+        isEditor=is_editor(user, settings),
         isDevPrincipal=user.is_dev_principal,
     )

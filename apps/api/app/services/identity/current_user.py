@@ -48,5 +48,25 @@ def require_admin(
     raise ForbiddenError("Admin role or group membership required")
 
 
+def is_editor(user: Principal, settings: Settings) -> bool:
+    """Editors maintain the project inventory (triage intake, edit records).
+
+    Graph-derived tokens carry no roles/groups (see core/security.py), so the
+    gate is an EDITOR_EMAILS allowlist. The local dev principal is always an
+    editor so the flows work out of the box with AUTH_MODE=disabled.
+    """
+    return user.is_dev_principal or user.email.lower() in settings.editor_emails_list
+
+
+def require_editor(
+    user: Annotated[Principal, Depends(get_current_user)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> Principal:
+    if is_editor(user, settings):
+        return user
+    raise ForbiddenError("Editor access required")
+
+
 CurrentUser = Annotated[Principal, Depends(get_current_user)]
 AdminUser = Annotated[Principal, Depends(require_admin)]
+EditorUser = Annotated[Principal, Depends(require_editor)]

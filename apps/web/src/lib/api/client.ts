@@ -6,7 +6,20 @@
  * as a Bearer header on every request. The React hook `useApiClient`
  * (see ./useApiClient) wires it to MSAL.
  */
-import type { ApiErrorBody, ChatResponse, MeResponse } from "@/types";
+import type {
+  ApiErrorBody,
+  ChatResponse,
+  ContentDetail,
+  ContentEventType,
+  ContentListFilters,
+  ContentListResponse,
+  IntakePayload,
+  MeResponse,
+  Project,
+  ProjectListFilters,
+  ProjectListResponse,
+  ProjectWritePayload,
+} from "@/types";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -33,6 +46,14 @@ export interface ApiClientOptions {
 export interface ApiClient {
   getMe(): Promise<MeResponse>;
   chat(message: string): Promise<ChatResponse>;
+  listContent(filters?: ContentListFilters): Promise<ContentListResponse>;
+  getContent(slug: string): Promise<ContentDetail>;
+  recordContentEvent(slug: string, eventType: ContentEventType): Promise<void>;
+  listProjects(filters?: ProjectListFilters): Promise<ProjectListResponse>;
+  getProject(id: number): Promise<Project>;
+  submitIntake(payload: IntakePayload): Promise<Project>;
+  createProject(payload: ProjectWritePayload): Promise<Project>;
+  updateProject(id: number, payload: ProjectWritePayload): Promise<Project>;
 }
 
 export function createApiClient(options: ApiClientOptions): ApiClient {
@@ -80,6 +101,45 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
       request<ChatResponse>("/api/v1/chat", {
         method: "POST",
         body: JSON.stringify({ message }),
+      }),
+    listContent: (filters = {}) => {
+      const params = new URLSearchParams();
+      if (filters.kind) params.set("kind", filters.kind);
+      if (filters.tag) params.set("tag", filters.tag);
+      if (filters.q) params.set("q", filters.q);
+      const qs = params.toString();
+      return request<ContentListResponse>(`/api/v1/content${qs ? `?${qs}` : ""}`);
+    },
+    getContent: (slug: string) =>
+      request<ContentDetail>(`/api/v1/content/${encodeURIComponent(slug)}`),
+    recordContentEvent: async (slug: string, eventType: ContentEventType) => {
+      await request(`/api/v1/content/${encodeURIComponent(slug)}/events`, {
+        method: "POST",
+        body: JSON.stringify({ eventType }),
+      });
+    },
+    listProjects: (filters = {}) => {
+      const params = new URLSearchParams();
+      if (filters.status) params.set("status", filters.status);
+      if (filters.department) params.set("department", filters.department);
+      const qs = params.toString();
+      return request<ProjectListResponse>(`/api/v1/projects${qs ? `?${qs}` : ""}`);
+    },
+    getProject: (id: number) => request<Project>(`/api/v1/projects/${id}`),
+    submitIntake: (payload: IntakePayload) =>
+      request<Project>("/api/v1/projects/intake", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    createProject: (payload: ProjectWritePayload) =>
+      request<Project>("/api/v1/projects", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    updateProject: (id: number, payload: ProjectWritePayload) =>
+      request<Project>(`/api/v1/projects/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
       }),
   };
 }

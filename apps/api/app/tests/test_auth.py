@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from app.core.config import AuthMode, Settings
 from app.core.errors import ForbiddenError, UnauthorizedError, UpstreamServiceError
-from app.core.security import Principal, _extract_principal, _GRAPH_ME_URL, validate_token
+from app.core.security import _GRAPH_ME_URL, Principal, _extract_principal, validate_token
 from app.services.identity.current_user import require_admin
 
 

@@ -13,7 +13,7 @@ services:
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-nimbus_local_pw}"
       POSTGRES_DB: nimbus
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U nimbus -d nimbus"]
       interval: 5s

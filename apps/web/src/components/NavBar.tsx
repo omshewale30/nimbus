@@ -11,7 +11,10 @@ export function NavBar() {
     <nav className="nav">
       <div className="nav-brand">Nimbus</div>
       <div className="nav-links">
-        <Link href="/">Dashboard</Link>
+        <Link href="/">Home</Link>
+        <Link href="/guides">Guides</Link>
+        <Link href="/prompts">Prompts</Link>
+        <Link href="/projects">Projects</Link>
         <Link href="/chat">Assistant</Link>
         <Link href="/profile">Profile</Link>
         {isAuthenticated ? (

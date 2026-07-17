@@ -181,6 +181,290 @@ a {
   font-size: 0.95rem;
 }
 
+/* ---- Content browse (guides, prompt library) ---- */
+
+.filters {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.filters .input {
+  max-width: 320px;
+}
+
+.chip-row {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.chip-row-tags {
+  margin-bottom: 1rem;
+}
+
+.chip {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.8rem;
+  cursor: default;
+}
+
+button.chip {
+  cursor: pointer;
+}
+
+.chip-active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--primary-contrast);
+}
+
+.chip-kind {
+  border-color: #c7d7fe;
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.chip-featured {
+  border-color: #fde68a;
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.content-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0;
+  color: var(--text);
+}
+
+.content-card:hover {
+  border-color: var(--primary);
+}
+
+.content-card h2 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.content-card p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.content-card .btn {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.btn-copied {
+  background: #067647;
+  border-color: #067647;
+}
+
+.prompt-text {
+  background: #f1f3f7;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  margin: 0 0 0.9rem;
+}
+
+.related-list {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.markdown h2 {
+  font-size: 1.15rem;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.markdown h3 {
+  font-size: 1rem;
+  margin: 1rem 0 0.4rem;
+}
+
+.markdown pre {
+  background: #f1f3f7;
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+}
+
+.markdown code {
+  background: #f1f3f7;
+  border-radius: 4px;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.85em;
+}
+
+.markdown blockquote {
+  border-left: 3px solid var(--border);
+  margin: 0.75rem 0;
+  padding: 0.25rem 1rem;
+  color: var(--muted);
+}
+
+.markdown table {
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+}
+
+.markdown th,
+.markdown td {
+  border: 1px solid var(--border);
+  padding: 0.35rem 0.7rem;
+  text-align: left;
+}
+
+/* ---- Project inventory ---- */
+
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.banner-cta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.banner-cta h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+}
+
+.banner-cta p {
+  margin: 0;
+}
+
+.table-card {
+  padding: 0.5rem 0;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.table th {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table td .chip {
+  margin-left: 0.5rem;
+}
+
+.stale {
+  color: var(--warn);
+}
+
+.pill {
+  display: inline-block;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  border: 1px solid var(--border);
+  background: #eef1f6;
+  color: var(--muted);
+}
+
+.pill-proposed {
+  background: var(--warn-bg);
+  border-color: #fde68a;
+  color: var(--warn);
+}
+
+.pill-pilot {
+  background: #eef2ff;
+  border-color: #c7d7fe;
+  color: #3730a3;
+}
+
+.pill-active {
+  background: #ecfdf3;
+  border-color: #abefc6;
+  color: #067647;
+}
+
+.pill-done {
+  background: #eef1f6;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.pill-rejected {
+  background: var(--danger-bg);
+  border-color: #fecdca;
+  color: var(--danger);
+}
+
+.form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.form-grid .input {
+  width: 100%;
+  font-family: inherit;
+  color: var(--text);
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 dl.kv {
   display: grid;
   grid-template-columns: 140px 1fr;
