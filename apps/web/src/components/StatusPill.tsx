@@ -1,5 +1,7 @@
 import type { ProjectStatus } from "@/types";
 
+import { Badge } from "@/components/ui";
+
 const LABELS: Record<ProjectStatus, string> = {
   proposed: "Proposed",
   idea: "Idea",
@@ -11,5 +13,16 @@ const LABELS: Record<ProjectStatus, string> = {
 };
 
 export function StatusPill({ status }: { status: ProjectStatus }) {
-  return <span className={`pill pill-${status}`}>{LABELS[status] ?? status}</span>;
+  const variant =
+    status === "active"
+      ? "success"
+      : status === "pilot"
+        ? "primary"
+        : status === "proposed"
+          ? "warning"
+          : status === "rejected"
+            ? "danger"
+            : "default";
+
+  return <Badge variant={variant}>{LABELS[status] ?? status}</Badge>;
 }

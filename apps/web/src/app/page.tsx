@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
-
 import { ErrorState } from "@/components/ErrorState";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Badge, ButtonLink, Card, CardLink, EmptyState, PageHeader } from "@/components/ui";
 import { useContentList } from "@/lib/api/useContent";
 import type { ContentSummary } from "@/types";
 
@@ -23,63 +22,73 @@ export default function HomePage() {
   const featured = items.filter((i) => i.featured);
 
   return (
-    <>
-      <h1>AI enablement hub</h1>
-      <p className="muted">
-        How-to guides, reusable prompts, and approved AI tools for Finance &amp; Operations staff.
-      </p>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="UNC Finance & Operations"
+        title="AI enablement hub"
+        description="How-to guides, reusable prompts, and approved AI tools for Finance & Operations staff."
+      />
+      <Card className="flex flex-col gap-4 border-carolina/25 bg-surface sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-lg">Have a question?</h2>
+          <p className="mt-1 text-sm text-muted">
+            Ask the assistant from the guides, prompts, and project inventory, with sources cited.
+          </p>
+        </div>
+        <ButtonLink href="/ask">Ask Nimbus</ButtonLink>
+      </Card>
 
-      <div className="card-grid">
-        <Link className="card content-card" href="/guides">
-          <h2>Guides</h2>
-          <p className="muted">Step-by-step playbooks and acceptable-use guidance.</p>
-        </Link>
-        <Link className="card content-card" href="/prompts">
-          <h2>Prompt library</h2>
-          <p className="muted">Copy-paste prompts for everyday Finance &amp; Ops work.</p>
-        </Link>
-        <Link className="card content-card" href="/projects">
-          <h2>Project inventory</h2>
-          <p className="muted">AI projects and pilots across F&amp;O — status, owners, value.</p>
-        </Link>
-        <Link className="card content-card" href="/chat">
-          <h2>Assistant</h2>
-          <p className="muted">Ask a question and get pointed to the right resource.</p>
-        </Link>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <CardLink href="/guides">
+          <h2 className="text-lg">Guides</h2>
+          <p className="text-sm text-muted">Step-by-step playbooks and acceptable-use guidance.</p>
+        </CardLink>
+        <CardLink href="/prompts">
+          <h2 className="text-lg">Prompt library</h2>
+          <p className="text-sm text-muted">Copy-paste prompts for everyday Finance &amp; Ops work.</p>
+        </CardLink>
+        <CardLink href="/projects">
+          <h2 className="text-lg">Project inventory</h2>
+          <p className="text-sm text-muted">AI projects and pilots across F&amp;O: status, owners, value.</p>
+        </CardLink>
+        <CardLink href="/chat">
+          <h2 className="text-lg">Assistant</h2>
+          <p className="text-sm text-muted">Ask a question and get pointed to the right resource.</p>
+        </CardLink>
       </div>
 
-      <div className="card banner-cta">
+      <Card className="flex flex-col gap-4 border-carolina/25 bg-gradient-to-br from-cloud to-surface sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2>Have an AI idea for your team?</h2>
-          <p className="muted">
+          <h2 className="text-lg">Have an AI idea for your team?</h2>
+          <p className="mt-1 text-sm text-muted">
             Propose a use case in two minutes — it goes straight to the inventory for review.
           </p>
         </div>
-        <Link className="btn" href="/propose">
-          Propose an AI use case
-        </Link>
-      </div>
+        <ButtonLink href="/propose">Propose an AI use case</ButtonLink>
+      </Card>
 
-      <h2>Featured</h2>
-      {loading ? (
-        <LoadingSpinner label="Loading…" />
-      ) : error ? (
-        <ErrorState error={error} onRetry={reload} />
-      ) : featured.length === 0 ? (
-        <p className="muted">Nothing featured yet.</p>
-      ) : (
-        <div className="card-grid">
-          {featured.map((item) => (
-            <Link key={item.slug} className="card content-card" href={itemHref(item)}>
-              <div className="chip-row">
-                <span className="chip chip-kind">{KIND_LABEL[item.kind] ?? item.kind}</span>
-              </div>
-              <h2>{item.title}</h2>
-              <p className="muted">{item.summary}</p>
-            </Link>
-          ))}
-        </div>
-      )}
-    </>
+      <section className="space-y-4">
+        <h2>Featured</h2>
+        {loading ? (
+          <LoadingSpinner label="Loading…" />
+        ) : error ? (
+          <ErrorState error={error} onRetry={reload} />
+        ) : featured.length === 0 ? (
+          <EmptyState title="Nothing featured yet." />
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {featured.map((item) => (
+              <CardLink key={item.slug} href={itemHref(item)}>
+                <div>
+                  <Badge variant="primary">{KIND_LABEL[item.kind] ?? item.kind}</Badge>
+                </div>
+                <h2 className="text-lg">{item.title}</h2>
+                <p className="text-sm text-muted">{item.summary}</p>
+              </CardLink>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   );
 }

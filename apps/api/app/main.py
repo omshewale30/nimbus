@@ -67,6 +67,21 @@ async def lifespan(_: FastAPI):
             log("Content sync: %s", result.summary(), extra={"errors": result.errors})
         except Exception:  # noqa: BLE001
             logger.exception("Content sync failed; continuing with existing content")
+        # Refresh the retrieval index (incremental; no-op off Postgres).
+        # Best-effort: /ask degrades gracefully if the index is stale.
+        try:
+            from app.services.ai.factory import get_ai_provider
+            from app.services.rag.indexer import reindex_all
+
+            session = get_session_factory()()
+            try:
+                stats = await reindex_all(session, get_ai_provider(settings))
+                session.commit()
+            finally:
+                session.close()
+            logger.info("RAG reindex: %s", stats)
+        except Exception:  # noqa: BLE001
+            logger.exception("RAG reindex failed; continuing with existing index")
     yield
 
 

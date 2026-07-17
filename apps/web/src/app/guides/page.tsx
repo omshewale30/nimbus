@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 import { ErrorState } from "@/components/ErrorState";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Badge, CardLink, EmptyState, FilterChip, Input, PageHeader } from "@/components/ui";
 import { useContentList } from "@/lib/api/useContent";
 import type { ContentKind } from "@/types";
 
@@ -50,27 +51,27 @@ export default function GuidesPage() {
   }, [guides, kind, tag, search]);
 
   return (
-    <>
-      <h1>Guides</h1>
-      <p className="muted">
-        Step-by-step playbooks, acceptable-use guidance, and the AI tool registry.
-      </p>
+    <div className="space-y-6">
+      <PageHeader
+        title="Guides"
+        description="Step-by-step playbooks, acceptable-use guidance, and the AI tool registry."
+      />
 
-      <div className="filters">
-        <div className="chip-row" role="group" aria-label="Filter by kind">
+      <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-sm">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by kind">
           {KIND_FILTERS.map((f) => (
-            <button
+            <FilterChip
               key={f.label}
               type="button"
-              className={kind === f.kind ? "chip chip-active" : "chip"}
+              active={kind === f.kind}
               onClick={() => setKind(f.kind)}
             >
               {f.label}
-            </button>
+            </FilterChip>
           ))}
         </div>
-        <input
-          className="input"
+        <Input
+          className="max-w-md"
           aria-label="Search guides"
           placeholder="Search guides…"
           value={search}
@@ -79,16 +80,16 @@ export default function GuidesPage() {
       </div>
 
       {tags.length > 0 ? (
-        <div className="chip-row chip-row-tags" role="group" aria-label="Filter by tag">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by tag">
           {tags.map((t) => (
-            <button
+            <FilterChip
               key={t}
               type="button"
-              className={tag === t ? "chip chip-active" : "chip"}
+              active={tag === t}
               onClick={() => setTag(tag === t ? null : t)}
             >
               {t}
-            </button>
+            </FilterChip>
           ))}
         </div>
       ) : null}
@@ -98,21 +99,21 @@ export default function GuidesPage() {
       ) : error ? (
         <ErrorState error={error} onRetry={reload} />
       ) : visible.length === 0 ? (
-        <p className="muted">No guides match the current filters.</p>
+        <EmptyState title="No guides match the current filters." />
       ) : (
-        <div className="card-grid">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {visible.map((item) => (
-            <Link key={item.slug} className="card content-card" href={`/guides/${item.slug}`}>
-              <div className="chip-row">
-                <span className="chip chip-kind">{KIND_LABEL[item.kind] ?? item.kind}</span>
-                {item.featured ? <span className="chip chip-featured">Featured</span> : null}
+            <CardLink key={item.slug} href={`/guides/${item.slug}`}>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="primary">{KIND_LABEL[item.kind] ?? item.kind}</Badge>
+                {item.featured ? <Badge variant="featured">Featured</Badge> : null}
               </div>
-              <h2>{item.title}</h2>
-              <p className="muted">{item.summary}</p>
-            </Link>
+              <h2 className="text-lg">{item.title}</h2>
+              <p className="text-sm text-muted">{item.summary}</p>
+            </CardLink>
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }

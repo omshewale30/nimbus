@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { ErrorState } from "@/components/ErrorState";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Markdown } from "@/components/Markdown";
+import { Badge, Card, PageHeader } from "@/components/ui";
 import { useContentDetail } from "@/lib/api/useContent";
 import type { RelatedItem } from "@/types";
 
@@ -22,43 +23,44 @@ export default function GuideDetailPage() {
   if (!item) return null;
 
   return (
-    <>
-      <p>
-        <Link href="/guides">← All guides</Link>
-      </p>
-      <h1>{item.title}</h1>
-      <p className="muted">{item.summary}</p>
+    <div className="space-y-6">
+      <Link className="text-sm font-medium text-muted hover:text-carolina" href="/guides">
+        ← All guides
+      </Link>
+      <PageHeader title={item.title} description={item.summary} />
       {item.tags.length > 0 ? (
-        <div className="chip-row">
+        <div className="flex flex-wrap gap-2">
           {item.tags.map((t) => (
-            <span key={t} className="chip">
+            <Badge key={t}>
               {t}
-            </span>
+            </Badge>
           ))}
         </div>
       ) : null}
 
-      <div className="card">
+      <Card>
         <Markdown>{item.bodyMd}</Markdown>
-      </div>
+      </Card>
 
       {item.related.length > 0 ? (
-        <div className="card">
-          <h2>Related</h2>
-          <ul className="related-list">
+        <Card>
+          <h2 className="text-lg">Related</h2>
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm">
             {item.related.map((r) => (
               <li key={r.slug}>
-                <Link href={relatedHref(r)}>{r.title}</Link>{" "}
-                <span className="muted">({r.kind})</span>
+                <Link className="font-medium" href={relatedHref(r)}>
+                  {r.title}
+                </Link>{" "}
+                <span className="text-muted">({r.kind})</span>
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
       ) : null}
 
-      <p className="muted">
+      <p className="text-sm text-muted">
         <small>Last updated {new Date(item.updatedAt).toLocaleDateString()}</small>
       </p>
-    </>
+    </div>
   );
 }

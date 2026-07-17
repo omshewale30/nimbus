@@ -9,6 +9,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+EMBEDDING_DIM = 1536
+# Backward-compatible alias for any older imports.
+EMBEDDING_DIMENSION = EMBEDDING_DIM
+
 
 @dataclass
 class ChatMessage:
@@ -38,4 +42,12 @@ class AIProvider(ABC):
         max_tokens: int | None = None,
     ) -> ChatResult:
         """Return a single assistant response for the given conversation."""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def embed(
+        self,
+        texts: list[str],
+    ) -> list[list[float]]:
+        """Return embeddings for the given texts."""
         raise NotImplementedError

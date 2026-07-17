@@ -70,4 +70,34 @@ describe("createApiClient", () => {
       correlationId: "c-9",
     });
   });
+
+  it("posts ask questions and parses citation shape", async () => {
+    const fetchImpl = mockFetch((_url, init) => {
+      expect(init?.body).toBe(JSON.stringify({ question: "budget variance" }));
+      return jsonResponse({
+        answer: "Use the budget variance guide.",
+        citations: [
+          {
+            sourceType: "content",
+            sourceKey: "copilot-excel-budget-variance",
+            title: "Analyze a budget variance report",
+            kind: "playbook",
+          },
+        ],
+        grounded: true,
+        model: "mock-1",
+      });
+    });
+    const client = createApiClient({
+      baseUrl: "http://api.test",
+      getToken: async () => "t",
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    const result = await client.ask("budget variance");
+
+    expect(fetchImpl.mock.calls[0]?.[0]).toBe("http://api.test/api/v1/ask");
+    expect(fetchImpl.mock.calls[0]?.[1]?.method).toBe("POST");
+    expect(result.citations[0]?.sourceKey).toBe("copilot-excel-budget-variance");
+  });
 });

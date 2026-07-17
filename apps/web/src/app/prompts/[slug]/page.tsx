@@ -7,6 +7,7 @@ import { CopyPromptButton } from "@/components/CopyPromptButton";
 import { ErrorState } from "@/components/ErrorState";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Markdown } from "@/components/Markdown";
+import { Badge, Card, PageHeader } from "@/components/ui";
 import { useApiClient } from "@/lib/api/useApiClient";
 import { useContentDetail } from "@/lib/api/useContent";
 import type { RelatedItem } from "@/types";
@@ -27,73 +28,76 @@ export default function PromptDetailPage() {
   const { prompt, audience, tool, example_input, example_output } = item.attributes;
 
   return (
-    <>
-      <p>
-        <Link href="/prompts">← Prompt library</Link>
-      </p>
-      <h1>{item.title}</h1>
-      <p className="muted">{item.summary}</p>
-      <div className="chip-row">
-        {audience ? <span className="chip chip-kind">{String(audience)}</span> : null}
-        {tool ? <span className="chip">{String(tool)}</span> : null}
+    <div className="space-y-6">
+      <Link className="text-sm font-medium text-muted hover:text-carolina" href="/prompts">
+        ← Prompt library
+      </Link>
+      <PageHeader title={item.title} description={item.summary} />
+      <div className="flex flex-wrap gap-2">
+        {audience ? <Badge variant="primary">{String(audience)}</Badge> : null}
+        {tool ? <Badge>{String(tool)}</Badge> : null}
         {item.tags.map((t) => (
-          <span key={t} className="chip">
+          <Badge key={t}>
             {t}
-          </span>
+          </Badge>
         ))}
       </div>
 
       {typeof prompt === "string" ? (
-        <div className="card">
-          <pre className="prompt-text">{prompt}</pre>
+        <Card>
+          <pre className="mb-4 whitespace-pre-wrap rounded-lg border border-border bg-cloud/70 p-4 font-mono text-sm text-navy">
+            {prompt}
+          </pre>
           <CopyPromptButton
             text={prompt}
             onCopied={() => void api.recordContentEvent(item.slug, "copy").catch(() => {})}
           />
-        </div>
+        </Card>
       ) : null}
 
       {example_input || example_output ? (
-        <div className="card">
-          <h2>Example</h2>
+        <Card className="space-y-4">
+          <h2 className="text-lg">Example</h2>
           {example_input ? (
-            <>
+            <div className="space-y-1">
               <h3>Input</h3>
-              <p className="muted">{String(example_input)}</p>
-            </>
+              <p className="text-sm text-muted">{String(example_input)}</p>
+            </div>
           ) : null}
           {example_output ? (
-            <>
+            <div className="space-y-1">
               <h3>What a good result looks like</h3>
-              <p className="muted">{String(example_output)}</p>
-            </>
+              <p className="text-sm text-muted">{String(example_output)}</p>
+            </div>
           ) : null}
-        </div>
+        </Card>
       ) : null}
 
       {item.bodyMd ? (
-        <div className="card">
+        <Card>
           <Markdown>{item.bodyMd}</Markdown>
-        </div>
+        </Card>
       ) : null}
 
       {item.related.length > 0 ? (
-        <div className="card">
-          <h2>Related</h2>
-          <ul className="related-list">
+        <Card>
+          <h2 className="text-lg">Related</h2>
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm">
             {item.related.map((r) => (
               <li key={r.slug}>
-                <Link href={relatedHref(r)}>{r.title}</Link>{" "}
-                <span className="muted">({r.kind})</span>
+                <Link className="font-medium" href={relatedHref(r)}>
+                  {r.title}
+                </Link>{" "}
+                <span className="text-muted">({r.kind})</span>
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
       ) : null}
 
-      <p className="muted">
+      <p className="text-sm text-muted">
         <small>Last updated {new Date(item.updatedAt).toLocaleDateString()}</small>
       </p>
-    </>
+    </div>
   );
 }

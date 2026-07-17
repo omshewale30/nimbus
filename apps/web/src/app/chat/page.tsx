@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { ErrorState } from "@/components/ErrorState";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Button, Card, Input, PageHeader } from "@/components/ui";
 import { useApiClient } from "@/lib/api/useApiClient";
 
 interface Turn {
@@ -39,20 +40,26 @@ export default function ChatPage() {
   }
 
   return (
-    <>
-      <h1>Assistant</h1>
-      <p className="muted">
-        Prompts are sent to the backend, which calls the AI provider. The frontend never talks to
-        the AI service directly.
-      </p>
+    <div className="space-y-6">
+      <PageHeader
+        title="Assistant"
+        description="Prompts are sent to the backend, which calls the AI provider. The frontend never talks to the AI service directly."
+      />
 
-      <div className="card">
-        <div className="chat-log">
+      <Card>
+        <div className="mb-4 flex min-h-64 flex-col gap-3">
           {turns.length === 0 ? (
-            <p className="muted">Ask something to get started.</p>
+            <p className="text-sm text-muted">Ask something to get started.</p>
           ) : (
             turns.map((turn, i) => (
-              <div key={i} className={turn.role === "user" ? "msg msg-user" : "msg msg-assistant"}>
+              <div
+                key={i}
+                className={
+                  turn.role === "user"
+                    ? "max-w-[85%] self-end whitespace-pre-wrap rounded-xl bg-carolina px-4 py-3 text-sm text-navy"
+                    : "max-w-[85%] self-start whitespace-pre-wrap rounded-xl bg-cloud px-4 py-3 text-sm text-foreground"
+                }
+              >
                 {turn.content}
               </div>
             ))
@@ -62,20 +69,19 @@ export default function ChatPage() {
 
         {error ? <ErrorState error={error} /> : null}
 
-        <form className="chat-form" onSubmit={onSubmit}>
-          <input
-            className="input"
+        <form className="mt-4 flex flex-col gap-2 sm:flex-row" onSubmit={onSubmit}>
+          <Input
             aria-label="Message"
             placeholder="Summarize this text..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={sending}
           />
-          <button className="btn" type="submit" disabled={sending || input.trim().length === 0}>
+          <Button type="submit" disabled={sending || input.trim().length === 0}>
             Send
-          </button>
+          </Button>
         </form>
-      </div>
-    </>
+      </Card>
+    </div>
   );
 }

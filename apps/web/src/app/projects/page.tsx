@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ErrorState } from "@/components/ErrorState";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { StatusPill } from "@/components/StatusPill";
+import { Badge, ButtonLink, Card, EmptyState, FilterChip, PageHeader } from "@/components/ui";
 import { useApiClient } from "@/lib/api/useApiClient";
 import type { MeResponse, Project, ProjectStatus } from "@/types";
 
@@ -77,44 +78,37 @@ export default function ProjectsPage() {
   );
 
   return (
-    <>
-      <div className="page-head">
-        <div>
-          <h1>AI project inventory</h1>
-          <p className="muted">
-            Every AI project, pilot, and use case across Finance &amp; Operations — who owns it,
-            where it stands, and what&apos;s next.
-          </p>
-        </div>
-        <Link className="btn" href="/propose">
-          Propose an AI use case
-        </Link>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="AI project inventory"
+        description="Every AI project, pilot, and use case across Finance & Operations: who owns it, where it stands, and what's next."
+        actions={<ButtonLink href="/propose">Propose an AI use case</ButtonLink>}
+      />
 
-      <div className="chip-row chip-row-tags" role="group" aria-label="Filter by status">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by status">
         {STATUS_FILTERS.map((f) => (
-          <button
+          <FilterChip
             key={f.label}
             type="button"
-            className={status === f.status ? "chip chip-active" : "chip"}
+            active={status === f.status}
             onClick={() => setStatus(f.status)}
           >
             {f.label}
-          </button>
+          </FilterChip>
         ))}
       </div>
 
       {departments.length > 1 ? (
-        <div className="chip-row chip-row-tags" role="group" aria-label="Filter by department">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by department">
           {departments.map((d) => (
-            <button
+            <FilterChip
               key={d}
               type="button"
-              className={department === d ? "chip chip-active" : "chip"}
+              active={department === d}
               onClick={() => setDepartment(department === d ? null : d)}
             >
               {d}
-            </button>
+            </FilterChip>
           ))}
         </div>
       ) : null}
@@ -124,47 +118,60 @@ export default function ProjectsPage() {
       ) : error ? (
         <ErrorState error={error} onRetry={load} />
       ) : visible.length === 0 ? (
-        <div className="card">
-          <p className="muted">
+        <EmptyState title="No projects match the current filters.">
+          <p>
             No projects match the current filters.{" "}
-            <Link href="/propose">Propose the first one</Link>.
+            <Link className="font-medium" href="/propose">
+              Propose the first one
+            </Link>
+            .
           </p>
-        </div>
+        </EmptyState>
       ) : (
-        <div className="card table-card">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Project</th>
-                <th>Department</th>
-                <th>Status</th>
-                <th>Owner</th>
-                <th>Updated</th>
+        <Card className="overflow-x-auto p-0">
+          <table className="min-w-full border-collapse text-sm">
+            <thead className="bg-cloud/60 text-left text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+              <tr className="border-b border-border">
+                <th className="px-4 py-3">Project</th>
+                <th className="px-4 py-3">Department</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Owner</th>
+                <th className="px-4 py-3">Updated</th>
               </tr>
             </thead>
             <tbody>
               {visible.map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <Link href={`/projects/${p.id}`}>{p.name}</Link>
+                <tr key={p.id} className="border-b border-border last:border-b-0">
+                  <td className="px-4 py-3 align-top">
+                    <Link className="font-medium" href={`/projects/${p.id}`}>
+                      {p.name}
+                    </Link>
                     {me?.isEditor && p.status === "proposed" ? (
-                      <span className="chip chip-featured">Needs triage</span>
+                      <Badge className="ml-2" variant="featured">
+                        Needs triage
+                      </Badge>
                     ) : null}
                   </td>
-                  <td>{p.department || "—"}</td>
-                  <td>
+                  <td className="px-4 py-3 align-top">{p.department || "—"}</td>
+                  <td className="px-4 py-3 align-top">
                     <StatusPill status={p.status} />
                   </td>
-                  <td>{p.ownerEmail || "—"}</td>
-                  <td className={daysSince(p.updatedAt) >= STALE_DAYS ? "stale" : undefined}>
+                  <td className="px-4 py-3 align-top">{p.ownerEmail || "—"}</td>
+                  <td
+                    className={
+                      daysSince(p.updatedAt) >= STALE_DAYS
+                        ? "px-4 py-3 align-top text-warning"
+                        : "px-4 py-3 align-top"
+                    }
+                  >
                     {updatedLabel(p.updatedAt)}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </Card>
       )}
-    </>
+    </div>
   );
 }

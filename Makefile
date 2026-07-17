@@ -6,7 +6,7 @@ SHELL := /bin/bash
 PYTHON ?= python3.11
 
 .PHONY: help dev up down logs api web install-api install-web \
-        test test-api test-web e2e lint typecheck fmt migrate content-sync
+        test test-api test-web e2e lint typecheck fmt migrate content-sync reindex
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -60,3 +60,6 @@ typecheck: ## Type-check frontend
 
 fmt: ## Format backend (ruff)
 	cd apps/api && . .venv/bin/activate && ruff format app && ruff check --fix app
+
+reindex: ## Reindex the retrieval index
+	cd apps/api && . .venv/bin/activate && python -m app.services.rag.indexer

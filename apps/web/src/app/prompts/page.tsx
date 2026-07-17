@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { CopyPromptButton } from "@/components/CopyPromptButton";
 import { ErrorState } from "@/components/ErrorState";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Badge, Card, EmptyState, FilterChip, Input, PageHeader } from "@/components/ui";
 import { useApiClient } from "@/lib/api/useApiClient";
 import { useContentList } from "@/lib/api/useContent";
 
@@ -33,16 +34,15 @@ export default function PromptsPage() {
   }, [items, tag, search]);
 
   return (
-    <>
-      <h1>Prompt library</h1>
-      <p className="muted">
-        Reusable prompts you can copy, adapt, and paste into approved AI tools. Open a prompt for
-        usage notes and examples.
-      </p>
+    <div className="space-y-6">
+      <PageHeader
+        title="Prompt library"
+        description="Reusable prompts you can copy, adapt, and paste into approved AI tools. Open a prompt for usage notes and examples."
+      />
 
-      <div className="filters">
-        <input
-          className="input"
+      <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+        <Input
+          className="max-w-md"
           aria-label="Search prompts"
           placeholder="Search prompts…"
           value={search}
@@ -51,16 +51,16 @@ export default function PromptsPage() {
       </div>
 
       {tags.length > 0 ? (
-        <div className="chip-row chip-row-tags" role="group" aria-label="Filter by tag">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by tag">
           {tags.map((t) => (
-            <button
+            <FilterChip
               key={t}
               type="button"
-              className={tag === t ? "chip chip-active" : "chip"}
+              active={tag === t}
               onClick={() => setTag(tag === t ? null : t)}
             >
               {t}
-            </button>
+            </FilterChip>
           ))}
         </div>
       ) : null}
@@ -70,31 +70,35 @@ export default function PromptsPage() {
       ) : error ? (
         <ErrorState error={error} onRetry={reload} />
       ) : visible.length === 0 ? (
-        <p className="muted">No prompts match the current filters.</p>
+        <EmptyState title="No prompts match the current filters." />
       ) : (
-        <div className="card-grid">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {visible.map((item) => (
-            <div key={item.slug} className="card content-card">
-              <div className="chip-row">
+            <Card key={item.slug} className="flex min-h-64 flex-col gap-3">
+              <div className="flex flex-wrap gap-2">
                 {item.attributes.audience ? (
-                  <span className="chip chip-kind">{item.attributes.audience}</span>
+                  <Badge variant="primary">{item.attributes.audience}</Badge>
                 ) : null}
-                {item.featured ? <span className="chip chip-featured">Featured</span> : null}
+                {item.featured ? <Badge variant="featured">Featured</Badge> : null}
               </div>
-              <h2>
-                <Link href={`/prompts/${item.slug}`}>{item.title}</Link>
+              <h2 className="text-lg">
+                <Link className="hover:text-carolina" href={`/prompts/${item.slug}`}>
+                  {item.title}
+                </Link>
               </h2>
-              <p className="muted">{item.summary}</p>
+              <p className="text-sm text-muted">{item.summary}</p>
               {typeof item.attributes.prompt === "string" ? (
-                <CopyPromptButton
-                  text={item.attributes.prompt}
-                  onCopied={() => void api.recordContentEvent(item.slug, "copy").catch(() => {})}
-                />
+                <div className="mt-auto pt-2">
+                  <CopyPromptButton
+                    text={item.attributes.prompt}
+                    onCopied={() => void api.recordContentEvent(item.slug, "copy").catch(() => {})}
+                  />
+                </div>
               ) : null}
-            </div>
+            </Card>
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }

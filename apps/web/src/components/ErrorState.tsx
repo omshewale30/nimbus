@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui";
 import { ApiError } from "@/lib/api/client";
 
 interface ErrorStateProps {
@@ -16,18 +17,21 @@ export function ErrorState({ error, onRetry }: ErrorStateProps) {
   const correlationId = error instanceof ApiError ? error.correlationId : undefined;
 
   return (
-    <div className="error" role="alert">
-      <strong>Error:</strong> {message}
+    <div
+      className="rounded-xl border border-danger/20 bg-danger-bg px-4 py-3 text-sm text-danger"
+      role="alert"
+    >
+      <strong className="font-semibold">Error:</strong> {message}
       {correlationId ? (
-        <div className="muted">
+        <div className="mt-1 text-danger/75">
           <small>Correlation ID: {correlationId}</small>
         </div>
       ) : null}
       {onRetry ? (
-        <div>
-          <button className="btn btn-secondary" onClick={onRetry} type="button">
+        <div className="mt-3">
+          <Button variant="secondary" size="sm" onClick={onRetry} type="button">
             Retry
-          </button>
+          </Button>
         </div>
       ) : null}
     </div>

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { Button } from "@/components/ui";
+
 interface Props {
   text: string;
   /** Called after a successful copy — used to record the usage event. */
@@ -28,8 +30,8 @@ export function CopyPromptButton({ text, onCopied }: Props) {
   }
 
   return (
-    <button className={copied ? "btn btn-copied" : "btn"} type="button" onClick={copy}>
+    <Button variant={copied ? "success" : "primary"} type="button" onClick={copy}>
       {copied ? "Copied ✓" : "Copy prompt"}
-    </button>
+    </Button>
   );
 }

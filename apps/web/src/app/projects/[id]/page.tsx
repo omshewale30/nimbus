@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ErrorState } from "@/components/ErrorState";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { StatusPill } from "@/components/StatusPill";
+import { Badge, Button, Card, Field, Input, PageHeader, Select, Textarea } from "@/components/ui";
 import { useApiClient } from "@/lib/api/useApiClient";
 import type { MeResponse, Project, ProjectStatus, ProjectWritePayload } from "@/types";
 
@@ -19,6 +20,14 @@ const STATUSES: ProjectStatus[] = [
   "done",
   "rejected",
 ];
+
+function DetailList({ children }: { children: React.ReactNode }) {
+  return <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[160px_1fr]">{children}</dl>;
+}
+
+function DetailTerm({ children }: { children: React.ReactNode }) {
+  return <dt className="font-medium text-muted">{children}</dt>;
+}
 
 export default function ProjectDetailPage() {
   const api = useApiClient();
@@ -94,172 +103,166 @@ export default function ProjectDetailPage() {
   if (!project) return null;
 
   return (
-    <>
-      <p>
-        <Link href="/projects">← All projects</Link>
-      </p>
-      <div className="page-head">
-        <div>
-          <h1>{project.name}</h1>
-          <div className="chip-row">
-            <StatusPill status={project.status} />
-            {project.department ? <span className="chip">{project.department}</span> : null}
-            {project.toolsUsed.map((t) => (
-              <span key={t} className="chip">
-                {t}
-              </span>
-            ))}
-          </div>
-        </div>
-        {me?.isEditor && !editing ? (
-          <button className="btn btn-secondary" type="button" onClick={() => startEditing(project)}>
-            Edit / triage
-          </button>
-        ) : null}
+    <div className="space-y-6">
+      <Link className="text-sm font-medium text-muted hover:text-carolina" href="/projects">
+        ← All projects
+      </Link>
+
+      <PageHeader
+        title={project.name}
+        actions={
+          me?.isEditor && !editing ? (
+            <Button variant="secondary" type="button" onClick={() => startEditing(project)}>
+              Edit / triage
+            </Button>
+          ) : null
+        }
+      />
+
+      <div className="-mt-4 flex flex-wrap gap-2">
+        <StatusPill status={project.status} />
+        {project.department ? <Badge>{project.department}</Badge> : null}
+        {project.toolsUsed.map((tool) => (
+          <Badge key={tool}>{tool}</Badge>
+        ))}
       </div>
 
       {editing ? (
-        <form className="card form-grid" onSubmit={save}>
-          <label>
-            Status
-            <select
-              className="input"
-              value={form.status}
-              onChange={(e) => set("status", e.target.value as ProjectStatus)}
-            >
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Owner email
-            <input
-              className="input"
-              value={form.ownerEmail ?? ""}
-              onChange={(e) => set("ownerEmail", e.target.value)}
-            />
-          </label>
-          <label>
-            Sponsor
-            <input
-              className="input"
-              value={form.sponsor ?? ""}
-              onChange={(e) => set("sponsor", e.target.value)}
-            />
-          </label>
-          <label>
-            Summary
-            <textarea
-              className="input"
-              rows={3}
-              value={form.summary ?? ""}
-              onChange={(e) => set("summary", e.target.value)}
-            />
-          </label>
-          <label>
-            Business value
-            <textarea
-              className="input"
-              rows={2}
-              value={form.businessValue ?? ""}
-              onChange={(e) => set("businessValue", e.target.value)}
-            />
-          </label>
-          <label>
-            Risks
-            <textarea
-              className="input"
-              rows={2}
-              value={form.risks ?? ""}
-              onChange={(e) => set("risks", e.target.value)}
-            />
-          </label>
-          <label>
-            Dependencies
-            <textarea
-              className="input"
-              rows={2}
-              value={form.dependencies ?? ""}
-              onChange={(e) => set("dependencies", e.target.value)}
-            />
-          </label>
-          <label>
-            Next steps
-            <textarea
-              className="input"
-              rows={2}
-              value={form.nextSteps ?? ""}
-              onChange={(e) => set("nextSteps", e.target.value)}
-            />
-          </label>
-          <label>
-            Triage note {form.status === "rejected" ? "(required when rejecting)" : ""}
-            <textarea
-              className="input"
-              rows={2}
-              value={form.triageNote ?? ""}
-              onChange={(e) => set("triageNote", e.target.value)}
-            />
-          </label>
+        <Card>
+          <form className="space-y-5" onSubmit={save}>
+            <Field label="Status">
+              <Select
+                value={form.status}
+                onChange={(e) => set("status", e.target.value as ProjectStatus)}
+              >
+                {STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </Select>
+            </Field>
 
-          {saveError ? <ErrorState error={saveError} /> : null}
+            <Field label="Owner email">
+              <Input
+                value={form.ownerEmail ?? ""}
+                onChange={(e) => set("ownerEmail", e.target.value)}
+              />
+            </Field>
 
-          <div className="form-actions">
-            <button className="btn" type="submit" disabled={saving}>
-              {saving ? "Saving…" : "Save"}
-            </button>
-            <button
-              className="btn btn-secondary"
-              type="button"
-              disabled={saving}
-              onClick={() => setEditing(false)}
+            <Field label="Sponsor">
+              <Input value={form.sponsor ?? ""} onChange={(e) => set("sponsor", e.target.value)} />
+            </Field>
+
+            <Field label="Summary">
+              <Textarea
+                rows={3}
+                value={form.summary ?? ""}
+                onChange={(e) => set("summary", e.target.value)}
+              />
+            </Field>
+
+            <Field label="Business value">
+              <Textarea
+                rows={2}
+                value={form.businessValue ?? ""}
+                onChange={(e) => set("businessValue", e.target.value)}
+              />
+            </Field>
+
+            <Field label="Risks">
+              <Textarea
+                rows={2}
+                value={form.risks ?? ""}
+                onChange={(e) => set("risks", e.target.value)}
+              />
+            </Field>
+
+            <Field label="Dependencies">
+              <Textarea
+                rows={2}
+                value={form.dependencies ?? ""}
+                onChange={(e) => set("dependencies", e.target.value)}
+              />
+            </Field>
+
+            <Field label="Next steps">
+              <Textarea
+                rows={2}
+                value={form.nextSteps ?? ""}
+                onChange={(e) => set("nextSteps", e.target.value)}
+              />
+            </Field>
+
+            <Field
+              label={`Triage note ${
+                form.status === "rejected" ? "(required when rejecting)" : ""
+              }`}
             >
-              Cancel
-            </button>
-          </div>
-        </form>
+              <Textarea
+                rows={2}
+                value={form.triageNote ?? ""}
+                onChange={(e) => set("triageNote", e.target.value)}
+              />
+            </Field>
+
+            {saveError ? <ErrorState error={saveError} /> : null}
+
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" disabled={saving}>
+                {saving ? "Saving…" : "Save"}
+              </Button>
+              <Button
+                variant="secondary"
+                type="button"
+                disabled={saving}
+                onClick={() => setEditing(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </Card>
       ) : (
         <>
-          <div className="card">
-            <dl className="kv">
-              <dt>Summary</dt>
+          <Card>
+            <DetailList>
+              <DetailTerm>Summary</DetailTerm>
               <dd>{project.summary || "—"}</dd>
-              <dt>Business value</dt>
+              <DetailTerm>Business value</DetailTerm>
               <dd>{project.businessValue || "—"}</dd>
-              <dt>Risks</dt>
+              <DetailTerm>Risks</DetailTerm>
               <dd>{project.risks || "—"}</dd>
-              <dt>Dependencies</dt>
+              <DetailTerm>Dependencies</DetailTerm>
               <dd>{project.dependencies || "—"}</dd>
-              <dt>Next steps</dt>
+              <DetailTerm>Next steps</DetailTerm>
               <dd>{project.nextSteps || "—"}</dd>
               {project.triageNote ? (
                 <>
-                  <dt>Triage note</dt>
+                  <DetailTerm>Triage note</DetailTerm>
                   <dd>{project.triageNote}</dd>
                 </>
               ) : null}
-            </dl>
-          </div>
-          <div className="card">
-            <dl className="kv">
-              <dt>Owner</dt>
+            </DetailList>
+          </Card>
+
+          <Card>
+            <DetailList>
+              <DetailTerm>Owner</DetailTerm>
               <dd>{project.ownerEmail || "—"}</dd>
-              <dt>Sponsor</dt>
+              <DetailTerm>Sponsor</DetailTerm>
               <dd>{project.sponsor || "—"}</dd>
-              <dt>Submitted by</dt>
+              <DetailTerm>Submitted by</DetailTerm>
               <dd>{project.submittedBy || "—"}</dd>
-              <dt>Last updated</dt>
+              <DetailTerm>Last updated</DetailTerm>
               <dd>
                 {new Date(project.updatedAt).toLocaleDateString()}
                 {project.lastUpdatedBy ? ` by ${project.lastUpdatedBy}` : ""}
               </dd>
-            </dl>
-          </div>
+            </DetailList>
+          </Card>
         </>
       )}
-    </>
+    </div>
   );
 }

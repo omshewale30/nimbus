@@ -8,6 +8,7 @@
  */
 import type {
   ApiErrorBody,
+  AskResponse,
   ChatResponse,
   ContentDetail,
   ContentEventType,
@@ -54,6 +55,7 @@ export interface ApiClient {
   submitIntake(payload: IntakePayload): Promise<Project>;
   createProject(payload: ProjectWritePayload): Promise<Project>;
   updateProject(id: number, payload: ProjectWritePayload): Promise<Project>;
+  ask(question: string): Promise<AskResponse>;
 }
 
 export function createApiClient(options: ApiClientOptions): ApiClient {
@@ -140,6 +142,11 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
       request<Project>(`/api/v1/projects/${id}`, {
         method: "PATCH",
         body: JSON.stringify(payload),
+      }),
+    ask: (question: string) =>
+      request<AskResponse>("/api/v1/ask", {
+        method: "POST",
+        body: JSON.stringify({ question }),
       }),
   };
 }

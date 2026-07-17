@@ -110,6 +110,21 @@ export interface IntakePayload {
   toolsUsed?: string[];
 }
 
+
+export interface Citation {
+  sourceType: "content" | "project";
+  sourceKey: string;
+  title: string;
+  kind: ContentKind | "project";
+}
+
+export interface AskResponse {
+  answer: string;
+  citations: Citation[];
+  grounded: boolean;
+  model?: string | null;
+}
+
 /** Editor-only create/patch payloads. */
 export interface ProjectWritePayload {
   name?: string;

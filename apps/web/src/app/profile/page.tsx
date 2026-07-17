@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { ErrorState } from "@/components/ErrorState";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Card, PageHeader } from "@/components/ui";
 import { useApiClient } from "@/lib/api/useApiClient";
 import type { MeResponse } from "@/types";
 
@@ -30,41 +31,43 @@ export default function ProfilePage() {
   }, [load]);
 
   return (
-    <>
-      <h1>Profile</h1>
-      <p className="muted">Identity and roles as resolved by the backend from your token.</p>
+    <div className="space-y-6">
+      <PageHeader
+        title="Profile"
+        description="Identity and roles as resolved by the backend from your token."
+      />
 
-      <div className="card">
+      <Card>
         {loading ? (
           <LoadingSpinner label="Loading profile…" />
         ) : error ? (
           <ErrorState error={error} onRetry={load} />
         ) : me ? (
-          <dl className="kv">
-            <dt>Name</dt>
+          <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[160px_1fr]">
+            <dt className="font-medium text-muted">Name</dt>
             <dd>{me.name || "—"}</dd>
-            <dt>Email</dt>
+            <dt className="font-medium text-muted">Email</dt>
             <dd>{me.email || "—"}</dd>
-            <dt>Subject</dt>
+            <dt className="font-medium text-muted">Subject</dt>
             <dd>{me.subject}</dd>
-            <dt>Roles</dt>
+            <dt className="font-medium text-muted">Roles</dt>
             <dd>{me.roles.length ? me.roles.join(", ") : "—"}</dd>
-            <dt>Groups</dt>
+            <dt className="font-medium text-muted">Groups</dt>
             <dd>{me.groups.length ? me.groups.join(", ") : "—"}</dd>
-            <dt>Admin</dt>
+            <dt className="font-medium text-muted">Admin</dt>
             <dd>{me.isAdmin ? "Yes" : "No"}</dd>
           </dl>
         ) : null}
-      </div>
+      </Card>
 
       {me?.isDevPrincipal ? (
-        <p className="muted">
+        <p className="text-sm text-muted">
           <small>
             This is a fake local-development principal (auth disabled). It does not represent a real
             signed-in user.
           </small>
         </p>
       ) : null}
-    </>
+    </div>
   );
 }

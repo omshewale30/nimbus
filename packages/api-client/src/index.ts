@@ -140,6 +140,20 @@ export interface ProjectListFilters {
   department?: string;
 }
 
+export interface Citation {
+  sourceType: "content" | "project";
+  sourceKey: string;
+  title: string;
+  kind: ContentKind | "project";
+}
+
+export interface AskResponse {
+  answer: string;
+  citations: Citation[];
+  grounded: boolean;
+  model?: string | null;
+}
+
 export interface ApiErrorBody {
   error: {
     code: string;
@@ -181,6 +195,7 @@ export interface ApiClient {
   submitIntake(payload: IntakePayload): Promise<Project>;
   createProject(payload: ProjectWritePayload): Promise<Project>;
   updateProject(id: number, payload: ProjectWritePayload): Promise<Project>;
+  ask(question: string): Promise<AskResponse>;
 }
 
 export function createApiClient(options: ApiClientOptions): ApiClient {
@@ -266,6 +281,11 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
       request<Project>(`/api/v1/projects/${id}`, {
         method: "PATCH",
         body: JSON.stringify(payload),
+      }),
+    ask: (question: string) =>
+      request<AskResponse>("/api/v1/ask", {
+        method: "POST",
+        body: JSON.stringify({ question }),
       }),
   };
 }

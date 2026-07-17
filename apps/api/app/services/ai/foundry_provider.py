@@ -107,3 +107,22 @@ class AzureFoundryProvider(AIProvider):
         except Exception as exc:  # noqa: BLE001 — normalize all SDK errors
             logger.exception("Azure AI Foundry call failed")
             raise UpstreamServiceError("AI service request failed") from exc
+
+
+    async def embed(self, texts: list[str]) -> list[list[float]]:
+        deployment = self._settings.azure_ai_foundry_embedding_deployment_name
+        if not deployment:
+            raise UpstreamServiceError(
+                "AZURE_AI_FOUNDRY_EMBEDDING_DEPLOYMENT_NAME is not configured"
+            )
+        try:
+            client = self._get_client()
+            response = await client.embeddings.create(model=deployment, input=texts)
+            # The API may reorder; sort by index to match the input order.
+            data = sorted(response.data, key=lambda d: d.index)
+            return [d.embedding for d in data]
+        except UpstreamServiceError:
+            raise
+        except Exception as exc:  # noqa: BLE001 — normalize all SDK errors
+            logger.exception("Azure AI Foundry embeddings call failed")
+            raise UpstreamServiceError("AI embeddings request failed") from exc
