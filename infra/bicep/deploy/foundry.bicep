@@ -31,7 +31,7 @@ param skuName string = 'S0'
 param customSubdomainName string = ''
 
 @description('Disable key auth and allow only Entra ID token auth.')
-param disableLocalAuth bool = true
+param disableLocalAuth bool = false
 
 @description('Public network access setting for the Foundry account.')
 @allowed([

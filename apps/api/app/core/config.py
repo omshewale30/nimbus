@@ -9,7 +9,7 @@ from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import AliasChoices, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _LOCAL_ONLY_ENVIRONMENTS = {"local", "test"}
@@ -70,8 +70,16 @@ class Settings(BaseSettings):
 
     # ---- Azure AI Foundry (only used when ai_provider == foundry) ----
     azure_ai_foundry_endpoint: str = ""
+    azure_ai_foundry_api_key: str = ""
     azure_ai_foundry_project_name: str = ""
-    azure_ai_foundry_deployment_name: str = ""
+    # Chat deployment; both env names are accepted.
+    azure_ai_foundry_deployment_name: str = Field(
+        default="",
+        validation_alias=AliasChoices(
+            "AZURE_AI_FOUNDRY_DEPLOYMENT_NAME",
+            "AZURE_AI_FOUNDRY_CHAT_DEPLOYMENT_NAME",
+        ),
+    )
     azure_ai_foundry_api_version: str = "2024-08-01-preview"
     # Embedding deployment for RAG (pgvector); empty disables real embeddings.
     azure_ai_foundry_embedding_deployment_name: str = ""

@@ -9,7 +9,7 @@ source "$SCRIPT_DIR/common.sh"
 ACCOUNT_KIND="AIServices"
 SKU_NAME="S0"
 CUSTOM_SUBDOMAIN_NAME=""
-DISABLE_LOCAL_AUTH="true"
+DISABLE_LOCAL_AUTH="false"
 PUBLIC_NETWORK_ACCESS="Enabled"
 ALLOW_PROJECT_MANAGEMENT="true"
 
@@ -27,7 +27,7 @@ $(common_options_help)
       --kind <AIServices|OpenAI>      Foundry account kind (default: AIServices)
       --sku <name>                    SKU name (default: S0)
       --custom-subdomain <name>       Optional custom subdomain (default: auto)
-      --disable-local-auth <bool>     true|false (default: true)
+      --disable-local-auth <bool>     true|false (default: false)
       --public-network <setting>      Enabled|Disabled (default: Enabled)
       --allow-project-management <bool> true|false (default: true)
 
