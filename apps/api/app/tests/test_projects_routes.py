@@ -19,6 +19,18 @@ INTAKE_PAYLOAD = {
     "toolsUsed": ["Microsoft 365 Copilot"],
 }
 
+INVENTORY_PAYLOAD = {
+    "name": "Travel reimbursement automation",
+    "department": "Finance",
+    "ownerEmail": "owner@unc.edu",
+    "sponsor": "AVC Finance",
+    "stakeholders": ["Travel Services", "Internal Audit"],
+    "summary": "In-flight RPA project automating travel reimbursement checks.",
+    "strategicCategory": "automation",
+    "startDate": "2026-01-15",
+    "targetDate": "2026-09-30",
+}
+
 
 @pytest.fixture(autouse=True)
 def clean_tables(db_session):
@@ -56,6 +68,7 @@ def test_intake_lands_as_proposed_with_audit(client, as_regular_user, db_session
     assert resp.status_code == 201
     body = resp.json()
     assert body["status"] == "proposed"
+    assert body["source"] == "proposed"
     assert body["submittedBy"] == "staff@example.com"
 
     audit = list(db_session.execute(select(AuditEvent)).scalars())
@@ -130,6 +143,126 @@ def test_list_filters_and_validation(client):
 
 def test_get_missing_project_404(client):
     assert client.get("/api/v1/projects/9999").status_code == 404
+
+
+def test_inventory_creates_inventoried_project(client, as_email_editor, db_session):
+    resp = client.post("/api/v1/projects/inventory", json=INVENTORY_PAYLOAD)
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["source"] == "inventoried"
+    assert body["status"] == "active"  # default for inventoried work
+    assert body["stakeholders"] == ["Travel Services", "Internal Audit"]
+    assert body["strategicCategory"] == "automation"
+    assert body["startDate"] == "2026-01-15"
+    assert body["archivedAt"] is None
+
+    actions = [a.action for a in db_session.execute(select(AuditEvent)).scalars()]
+    assert actions == ["project.inventoried"]
+
+
+def test_regular_user_cannot_inventory_archive_or_delete(client, as_regular_user):
+    assert client.post("/api/v1/projects/inventory", json=INVENTORY_PAYLOAD).status_code == 403
+    assert client.post("/api/v1/projects/1/archive").status_code == 403
+    assert client.post("/api/v1/projects/1/unarchive").status_code == 403
+    assert client.delete("/api/v1/projects/1").status_code == 403
+
+
+def test_inventory_rejects_target_before_start(client):
+    bad = {**INVENTORY_PAYLOAD, "startDate": "2026-09-30", "targetDate": "2026-01-15"}
+    assert client.post("/api/v1/projects/inventory", json=bad).status_code == 422
+
+
+def test_patch_supports_registry_fields(client):
+    created = client.post("/api/v1/projects/inventory", json=INVENTORY_PAYLOAD).json()
+    resp = client.patch(
+        f"/api/v1/projects/{created['id']}",
+        json={"strategicCategory": "analytics", "stakeholders": ["Budget Office"]},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["strategicCategory"] == "analytics"
+    assert resp.json()["stakeholders"] == ["Budget Office"]
+    # source is not patchable: unknown fields are ignored by the schema
+    resp = client.patch(f"/api/v1/projects/{created['id']}", json={"source": "proposed"})
+    assert resp.json()["source"] == "inventoried"
+
+
+def test_archive_hides_from_default_list(client, db_session):
+    created = client.post("/api/v1/projects/inventory", json=INVENTORY_PAYLOAD).json()
+    pid = created["id"]
+
+    archived = client.post(f"/api/v1/projects/{pid}/archive")
+    assert archived.status_code == 200
+    assert archived.json()["archivedAt"] is not None
+    assert archived.json()["archivedBy"] != ""
+
+    default_list = client.get("/api/v1/projects").json()
+    assert pid not in [p["id"] for p in default_list["items"]]
+
+    with_archived = client.get("/api/v1/projects", params={"includeArchived": "true"}).json()
+    assert pid in [p["id"] for p in with_archived["items"]]
+
+    # still retrievable by id
+    assert client.get(f"/api/v1/projects/{pid}").status_code == 200
+
+    # archiving twice is a no-op: only one audit event
+    client.post(f"/api/v1/projects/{pid}/archive")
+    archive_events = [
+        a
+        for a in db_session.execute(select(AuditEvent)).scalars()
+        if a.action == "project.archived"
+    ]
+    assert len(archive_events) == 1
+
+
+def test_unarchive_restores_project(client, db_session):
+    created = client.post("/api/v1/projects/inventory", json=INVENTORY_PAYLOAD).json()
+    pid = created["id"]
+    client.post(f"/api/v1/projects/{pid}/archive")
+
+    resp = client.post(f"/api/v1/projects/{pid}/unarchive")
+    assert resp.status_code == 200
+    assert resp.json()["archivedAt"] is None
+    assert resp.json()["archivedBy"] == ""
+
+    assert pid in [p["id"] for p in client.get("/api/v1/projects").json()["items"]]
+    actions = [a.action for a in db_session.execute(select(AuditEvent)).scalars()]
+    assert "project.unarchived" in actions
+
+
+def test_delete_removes_project_with_audit(client, db_session):
+    created = client.post("/api/v1/projects/inventory", json=INVENTORY_PAYLOAD).json()
+    pid = created["id"]
+
+    resp = client.delete(f"/api/v1/projects/{pid}")
+    assert resp.status_code == 204
+    assert client.get(f"/api/v1/projects/{pid}").status_code == 404
+
+    deleted = [
+        a
+        for a in db_session.execute(select(AuditEvent)).scalars()
+        if a.action == "project.deleted"
+    ]
+    assert len(deleted) == 1
+    assert f"project_id={pid}" in deleted[0].detail
+    assert "Travel reimbursement automation" in deleted[0].detail
+
+    assert client.delete("/api/v1/projects/9999").status_code == 404
+
+
+def test_list_filters_by_source_and_q(client):
+    client.post("/api/v1/projects/intake", json=INTAKE_PAYLOAD)
+    client.post("/api/v1/projects/inventory", json=INVENTORY_PAYLOAD)
+
+    inventoried = client.get("/api/v1/projects", params={"source": "inventoried"}).json()
+    assert [p["name"] for p in inventoried["items"]] == ["Travel reimbursement automation"]
+
+    proposed = client.get("/api/v1/projects", params={"source": "proposed"}).json()
+    assert [p["name"] for p in proposed["items"]] == ["Invoice triage pilot"]
+
+    by_q = client.get("/api/v1/projects", params={"q": "reimbursement"}).json()
+    assert [p["name"] for p in by_q["items"]] == ["Travel reimbursement automation"]
+
+    assert client.get("/api/v1/projects", params={"source": "bogus"}).status_code == 422
 
 
 def test_me_reports_editor_flag(client, as_regular_user):

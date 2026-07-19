@@ -6,9 +6,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ErrorState } from "@/components/ErrorState";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { StatusPill } from "@/components/StatusPill";
-import { Badge, ButtonLink, Card, EmptyState, FilterChip, PageHeader } from "@/components/ui";
+import { Badge, ButtonLink, Card, EmptyState, FilterChip, Input, PageHeader } from "@/components/ui";
 import { useApiClient } from "@/lib/api/useApiClient";
-import type { MeResponse, Project, ProjectStatus } from "@/types";
+import type { MeResponse, Project, ProjectSource, ProjectStatus } from "@/types";
 
 const STATUS_FILTERS: { label: string; status: ProjectStatus | null }[] = [
   { label: "All", status: null },
@@ -19,6 +19,12 @@ const STATUS_FILTERS: { label: string; status: ProjectStatus | null }[] = [
   { label: "Paused", status: "paused" },
   { label: "Done", status: "done" },
   { label: "Rejected", status: "rejected" },
+];
+
+const SOURCE_FILTERS: { label: string; source: ProjectSource | null }[] = [
+  { label: "All sources", source: null },
+  { label: "Proposals", source: "proposed" },
+  { label: "Inventoried", source: "inventoried" },
 ];
 
 const STALE_DAYS = 90;
@@ -42,12 +48,18 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<ProjectStatus | null>(null);
   const [department, setDepartment] = useState<string | null>(null);
+  const [source, setSource] = useState<ProjectSource | null>(null);
+  const [search, setSearch] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [list, profile] = await Promise.all([api.listProjects(), api.getMe()]);
+      const [list, profile] = await Promise.all([
+        api.listProjects({ includeArchived: showArchived }),
+        api.getMe(),
+      ]);
       setProjects(list.items);
       setMe(profile);
     } catch (err) {
@@ -55,7 +67,7 @@ export default function ProjectsPage() {
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, [api, showArchived]);
 
   useEffect(() => {
     void load();
@@ -67,23 +79,67 @@ export default function ProjectsPage() {
     return Array.from(all).sort();
   }, [projects]);
 
-  const visible = useMemo(
-    () =>
-      projects.filter(
-        (p) =>
-          (status === null || p.status === status) &&
-          (department === null || p.department === department),
-      ),
-    [projects, status, department],
-  );
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return projects.filter(
+      (p) =>
+        (status === null || p.status === status) &&
+        (department === null || p.department === department) &&
+        (source === null || p.source === source) &&
+        (q === "" ||
+          p.name.toLowerCase().includes(q) ||
+          p.summary.toLowerCase().includes(q)),
+    );
+  }, [projects, status, department, source, search]);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="AI project inventory"
         description="Every AI project, pilot, and use case across Finance & Operations: who owns it, where it stands, and what's next."
-        actions={<ButtonLink href="/propose">Propose an AI use case</ButtonLink>}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            {me?.isEditor ? (
+              <ButtonLink variant="secondary" href="/projects/inventory">
+                Inventory existing project
+              </ButtonLink>
+            ) : null}
+            <ButtonLink href="/propose">Propose an AI use case</ButtonLink>
+          </div>
+        }
       />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          type="search"
+          className="max-w-xs"
+          placeholder="Search projects…"
+          aria-label="Search projects"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by source">
+          {SOURCE_FILTERS.map((f) => (
+            <FilterChip
+              key={f.label}
+              type="button"
+              active={source === f.source}
+              onClick={() => setSource(f.source)}
+            >
+              {f.label}
+            </FilterChip>
+          ))}
+        </div>
+        {me?.isEditor ? (
+          <FilterChip
+            type="button"
+            active={showArchived}
+            onClick={() => setShowArchived((v) => !v)}
+          >
+            Show archived
+          </FilterChip>
+        ) : null}
+      </div>
 
       <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by status">
         {STATUS_FILTERS.map((f) => (
@@ -141,11 +197,26 @@ export default function ProjectsPage() {
             </thead>
             <tbody>
               {visible.map((p) => (
-                <tr key={p.id} className="border-b border-border last:border-b-0">
+                <tr
+                  key={p.id}
+                  className={
+                    p.archivedAt
+                      ? "border-b border-border opacity-60 last:border-b-0"
+                      : "border-b border-border last:border-b-0"
+                  }
+                >
                   <td className="px-4 py-3 align-top">
                     <Link className="font-medium" href={`/projects/${p.id}`}>
                       {p.name}
                     </Link>
+                    <Badge className="ml-2" variant={p.source === "inventoried" ? "primary" : "default"}>
+                      {p.source === "inventoried" ? "Inventoried" : "Proposal"}
+                    </Badge>
+                    {p.archivedAt ? (
+                      <Badge className="ml-2" variant="warning">
+                        Archived
+                      </Badge>
+                    ) : null}
                     {me?.isEditor && p.status === "proposed" ? (
                       <Badge className="ml-2" variant="featured">
                         Needs triage

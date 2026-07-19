@@ -3,7 +3,7 @@
 Sources:
   - published `content_items`: the markdown body split by heading, each chunk
     prefixed with title/kind/tags so retrieval sees the context;
-  - `projects`: one synthetic document per row.
+  - active `projects`: one synthetic document per non-archived row.
 
 Indexing is incremental by checksum (same idea as `content_sync`): a source
 whose checksum is unchanged is skipped; otherwise its chunks are deleted and
@@ -213,7 +213,9 @@ async def reindex_all(db: Session, provider: AIProvider) -> dict[str, int]:
     stats["deleted_sources"] += _delete_stale(db, "content", {i.slug for i in items})
 
     project_checksums = _existing_checksums(db, "project")
-    projects = db.execute(select(Project)).scalars().all()
+    projects = db.execute(
+        select(Project).where(Project.archived_at.is_(None))
+    ).scalars().all()
     for row in projects:
         doc = project_document(row)
         checksum = _sha256(doc)
@@ -237,8 +239,11 @@ async def reindex_all(db: Session, provider: AIProvider) -> dict[str, int]:
 
 
 async def reindex_project(db: Session, provider: AIProvider, row: Project) -> None:
-    """Refresh one project's chunks (used inline by the projects routes)."""
+    """Refresh one project's chunks, or purge them when the project is archived."""
     if not _is_postgres(db):
+        return
+    if row.archived_at is not None:
+        remove_project_chunks(db, row.id)
         return
     doc = project_document(row)
     await _replace_chunks(
@@ -250,6 +255,18 @@ async def reindex_project(db: Session, provider: AIProvider, row: Project) -> No
         kind="project",
         chunks=[Chunk(heading="", text=doc)],
         checksum=_sha256(doc),
+    )
+
+
+def remove_project_chunks(db: Session, project_id: int) -> None:
+    """Drop one project's chunks (on archive/delete). No-op off Postgres."""
+    if not _is_postgres(db):
+        return
+    db.execute(
+        delete(ContentChunk).where(
+            ContentChunk.source_type == "project",
+            ContentChunk.source_key == str(project_id),
+        )
     )
 
 

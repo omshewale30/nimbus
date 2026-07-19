@@ -15,6 +15,7 @@ import type {
   ContentListResponse,
   InsightsSummary,
   IntakePayload,
+  InventoryPayload,
   MeResponse,
   Project,
   ProjectListFilters,
@@ -54,6 +55,10 @@ export interface ApiClient {
   submitIntake(payload: IntakePayload): Promise<Project>;
   createProject(payload: ProjectWritePayload): Promise<Project>;
   updateProject(id: number, payload: ProjectWritePayload): Promise<Project>;
+  inventoryProject(payload: InventoryPayload): Promise<Project>;
+  archiveProject(id: number): Promise<Project>;
+  unarchiveProject(id: number): Promise<Project>;
+  deleteProject(id: number): Promise<void>;
   ask(question: string): Promise<AskResponse>;
   getInsightsSummary(): Promise<InsightsSummary>;
 }
@@ -94,6 +99,9 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
       throw new ApiError(response.status, code, message, correlationId);
     }
 
+    if (response.status === 204) {
+      return undefined as T;
+    }
     return (await response.json()) as T;
   }
 
@@ -119,6 +127,9 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
       const params = new URLSearchParams();
       if (filters.status) params.set("status", filters.status);
       if (filters.department) params.set("department", filters.department);
+      if (filters.source) params.set("source", filters.source);
+      if (filters.q) params.set("q", filters.q);
+      if (filters.includeArchived) params.set("includeArchived", "true");
       const qs = params.toString();
       return request<ProjectListResponse>(`/api/v1/projects${qs ? `?${qs}` : ""}`);
     },
@@ -138,6 +149,18 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         method: "PATCH",
         body: JSON.stringify(payload),
       }),
+    inventoryProject: (payload: InventoryPayload) =>
+      request<Project>("/api/v1/projects/inventory", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    archiveProject: (id: number) =>
+      request<Project>(`/api/v1/projects/${id}/archive`, { method: "POST" }),
+    unarchiveProject: (id: number) =>
+      request<Project>(`/api/v1/projects/${id}/unarchive`, { method: "POST" }),
+    deleteProject: async (id: number) => {
+      await request(`/api/v1/projects/${id}`, { method: "DELETE" });
+    },
     ask: (question: string) =>
       request<AskResponse>("/api/v1/ask", {
         method: "POST",

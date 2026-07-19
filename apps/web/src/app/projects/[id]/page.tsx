@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { ErrorState } from "@/components/ErrorState";
@@ -31,6 +31,7 @@ function DetailTerm({ children }: { children: React.ReactNode }) {
 
 export default function ProjectDetailPage() {
   const api = useApiClient();
+  const router = useRouter();
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
 
@@ -41,8 +42,11 @@ export default function ProjectDetailPage() {
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<ProjectWritePayload>({});
+  const [stakeholdersText, setStakeholdersText] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<unknown>(null);
+  const [actionError, setActionError] = useState<unknown>(null);
+  const [acting, setActing] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -73,7 +77,11 @@ export default function ProjectDetailPage() {
       dependencies: p.dependencies,
       nextSteps: p.nextSteps,
       triageNote: p.triageNote,
+      strategicCategory: p.strategicCategory,
+      startDate: p.startDate,
+      targetDate: p.targetDate,
     });
+    setStakeholdersText(p.stakeholders.join(", "));
     setSaveError(null);
     setEditing(true);
   }
@@ -84,13 +92,51 @@ export default function ProjectDetailPage() {
     setSaving(true);
     setSaveError(null);
     try {
-      const updated = await api.updateProject(id, form);
+      const updated = await api.updateProject(id, {
+        ...form,
+        stakeholders: stakeholdersText
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      });
       setProject(updated);
       setEditing(false);
     } catch (err) {
       setSaveError(err);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function toggleArchive(p: Project) {
+    if (acting) return;
+    setActing(true);
+    setActionError(null);
+    try {
+      const updated = p.archivedAt
+        ? await api.unarchiveProject(p.id)
+        : await api.archiveProject(p.id);
+      setProject(updated);
+    } catch (err) {
+      setActionError(err);
+    } finally {
+      setActing(false);
+    }
+  }
+
+  async function remove(p: Project) {
+    if (acting) return;
+    if (!window.confirm(`Permanently delete "${p.name}"? Archiving is usually the better call.`)) {
+      return;
+    }
+    setActing(true);
+    setActionError(null);
+    try {
+      await api.deleteProject(p.id);
+      router.push("/projects");
+    } catch (err) {
+      setActionError(err);
+      setActing(false);
     }
   }
 
@@ -112,20 +158,46 @@ export default function ProjectDetailPage() {
         title={project.name}
         actions={
           me?.isEditor && !editing ? (
-            <Button variant="secondary" type="button" onClick={() => startEditing(project)}>
-              Edit / triage
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" type="button" onClick={() => startEditing(project)}>
+                Edit / triage
+              </Button>
+              <Button
+                variant="secondary"
+                type="button"
+                disabled={acting}
+                onClick={() => void toggleArchive(project)}
+              >
+                {project.archivedAt ? "Unarchive" : "Archive"}
+              </Button>
+              <Button
+                variant="ghost"
+                type="button"
+                className="text-danger"
+                disabled={acting}
+                onClick={() => void remove(project)}
+              >
+                Delete
+              </Button>
+            </div>
           ) : null
         }
       />
 
       <div className="-mt-4 flex flex-wrap gap-2">
         <StatusPill status={project.status} />
+        <Badge variant={project.source === "inventoried" ? "primary" : "default"}>
+          {project.source === "inventoried" ? "Inventoried" : "Proposal"}
+        </Badge>
+        {project.archivedAt ? <Badge variant="warning">Archived</Badge> : null}
         {project.department ? <Badge>{project.department}</Badge> : null}
+        {project.strategicCategory ? <Badge>{project.strategicCategory}</Badge> : null}
         {project.toolsUsed.map((tool) => (
           <Badge key={tool}>{tool}</Badge>
         ))}
       </div>
+
+      {actionError ? <ErrorState error={actionError} /> : null}
 
       {editing ? (
         <Card>
@@ -153,6 +225,39 @@ export default function ProjectDetailPage() {
             <Field label="Sponsor">
               <Input value={form.sponsor ?? ""} onChange={(e) => set("sponsor", e.target.value)} />
             </Field>
+
+            <Field label="Stakeholders (comma-separated)">
+              <Input
+                value={stakeholdersText}
+                onChange={(e) => setStakeholdersText(e.target.value)}
+              />
+            </Field>
+
+            <Field label="Strategic category">
+              <Input
+                maxLength={128}
+                value={form.strategicCategory ?? ""}
+                onChange={(e) => set("strategicCategory", e.target.value)}
+              />
+            </Field>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field label="Start date">
+                <Input
+                  type="date"
+                  value={form.startDate ?? ""}
+                  onChange={(e) => set("startDate", e.target.value || null)}
+                />
+              </Field>
+              <Field label="Target date">
+                <Input
+                  type="date"
+                  min={form.startDate ?? undefined}
+                  value={form.targetDate ?? ""}
+                  onChange={(e) => set("targetDate", e.target.value || null)}
+                />
+              </Field>
+            </div>
 
             <Field label="Summary">
               <Textarea
@@ -252,6 +357,12 @@ export default function ProjectDetailPage() {
               <dd>{project.ownerEmail || "—"}</dd>
               <DetailTerm>Sponsor</DetailTerm>
               <dd>{project.sponsor || "—"}</dd>
+              <DetailTerm>Stakeholders</DetailTerm>
+              <dd>{project.stakeholders.length ? project.stakeholders.join(", ") : "—"}</dd>
+              <DetailTerm>Start date</DetailTerm>
+              <dd>{project.startDate ?? "—"}</dd>
+              <DetailTerm>Target date</DetailTerm>
+              <dd>{project.targetDate ?? "—"}</dd>
               <DetailTerm>Submitted by</DetailTerm>
               <dd>{project.submittedBy || "—"}</dd>
               <DetailTerm>Last updated</DetailTerm>
@@ -259,6 +370,15 @@ export default function ProjectDetailPage() {
                 {new Date(project.updatedAt).toLocaleDateString()}
                 {project.lastUpdatedBy ? ` by ${project.lastUpdatedBy}` : ""}
               </dd>
+              {project.archivedAt ? (
+                <>
+                  <DetailTerm>Archived</DetailTerm>
+                  <dd>
+                    {new Date(project.archivedAt).toLocaleDateString()}
+                    {project.archivedBy ? ` by ${project.archivedBy}` : ""}
+                  </dd>
+                </>
+              ) : null}
             </DetailList>
           </Card>
         </>

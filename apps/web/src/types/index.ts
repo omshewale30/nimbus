@@ -69,6 +69,9 @@ export type ProjectStatus =
   | "done"
   | "rejected";
 
+/** Origin of a registry record: staff intake vs editor-inventoried existing project. */
+export type ProjectSource = "proposed" | "inventoried";
+
 export interface Project {
   id: number;
   name: string;
@@ -76,6 +79,7 @@ export interface Project {
   ownerEmail: string;
   sponsor: string;
   status: ProjectStatus;
+  source: ProjectSource;
   summary: string;
   businessValue: string;
   risks: string;
@@ -84,8 +88,14 @@ export interface Project {
   triageNote: string;
   toolsUsed: string[];
   relatedSlugs: string[];
+  stakeholders: string[];
+  strategicCategory: string;
+  startDate: string | null;
+  targetDate: string | null;
   submittedBy: string;
   lastUpdatedBy: string;
+  archivedAt: string | null;
+  archivedBy: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -135,11 +145,37 @@ export interface ProjectWritePayload {
   triageNote?: string;
   toolsUsed?: string[];
   relatedSlugs?: string[];
+  stakeholders?: string[];
+  strategicCategory?: string;
+  startDate?: string | null;
+  targetDate?: string | null;
+}
+
+/** Editor-only "inventory an existing project" form (POST /projects/inventory). */
+export interface InventoryPayload {
+  name: string;
+  department?: string;
+  ownerEmail?: string;
+  sponsor?: string;
+  stakeholders?: string[];
+  status?: ProjectStatus;
+  summary: string;
+  businessValue?: string;
+  risks?: string;
+  dependencies?: string;
+  nextSteps?: string;
+  toolsUsed?: string[];
+  strategicCategory?: string;
+  startDate?: string | null;
+  targetDate?: string | null;
 }
 
 export interface ProjectListFilters {
   status?: ProjectStatus;
   department?: string;
+  source?: ProjectSource;
+  q?: string;
+  includeArchived?: boolean;
 }
 
 /** Leadership usage metrics (GET /insights/summary). */

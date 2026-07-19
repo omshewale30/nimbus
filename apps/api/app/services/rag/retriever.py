@@ -140,7 +140,9 @@ class MockRetriever:
                 )
             )
 
-        projects = db.execute(select(Project)).scalars().all()
+        projects = db.execute(
+            select(Project).where(Project.archived_at.is_(None))
+        ).scalars().all()
         for row in projects:
             doc = project_document(row)
             score = _keyword_score(query_tokens, _token_set(doc))

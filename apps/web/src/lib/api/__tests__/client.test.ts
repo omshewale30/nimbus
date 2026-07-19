@@ -70,6 +70,71 @@ describe("createApiClient", () => {
     });
   });
 
+  it("builds registry list filters into the query string", async () => {
+    const fetchImpl = mockFetch(() => jsonResponse({ items: [], total: 0 }));
+    const client = createApiClient({
+      baseUrl: "http://api.test",
+      getToken: async () => "t",
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    await client.listProjects({ source: "inventoried", q: "travel", includeArchived: true });
+
+    const url = new URL(fetchImpl.mock.calls[0]![0]);
+    expect(url.pathname).toBe("/api/v1/projects");
+    expect(url.searchParams.get("source")).toBe("inventoried");
+    expect(url.searchParams.get("q")).toBe("travel");
+    expect(url.searchParams.get("includeArchived")).toBe("true");
+  });
+
+  it("posts inventory payloads to /projects/inventory", async () => {
+    const fetchImpl = mockFetch((_url, init) => {
+      const body = JSON.parse(String(init?.body));
+      expect(body.name).toBe("Travel automation");
+      expect(body.stakeholders).toEqual(["Travel Services"]);
+      return jsonResponse({ id: 7, source: "inventoried" });
+    });
+    const client = createApiClient({
+      baseUrl: "http://api.test",
+      getToken: async () => "t",
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    const result = await client.inventoryProject({
+      name: "Travel automation",
+      summary: "Automates reimbursement checks.",
+      stakeholders: ["Travel Services"],
+    });
+
+    expect(fetchImpl.mock.calls[0]?.[0]).toBe("http://api.test/api/v1/projects/inventory");
+    expect(fetchImpl.mock.calls[0]?.[1]?.method).toBe("POST");
+    expect(result.source).toBe("inventoried");
+  });
+
+  it("archives, unarchives, and deletes projects", async () => {
+    const fetchImpl = mockFetch((url, init) => {
+      if (init?.method === "DELETE") return new Response(null, { status: 204 });
+      return jsonResponse({ id: 7, archivedAt: url.endsWith("/archive") ? "2026-07-18" : null });
+    });
+    const client = createApiClient({
+      baseUrl: "http://api.test",
+      getToken: async () => "t",
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    const archived = await client.archiveProject(7);
+    expect(archived.archivedAt).toBe("2026-07-18");
+    const restored = await client.unarchiveProject(7);
+    expect(restored.archivedAt).toBeNull();
+    await expect(client.deleteProject(7)).resolves.toBeUndefined();
+
+    expect(fetchImpl.mock.calls.map((c) => [c[0], c[1]?.method])).toEqual([
+      ["http://api.test/api/v1/projects/7/archive", "POST"],
+      ["http://api.test/api/v1/projects/7/unarchive", "POST"],
+      ["http://api.test/api/v1/projects/7", "DELETE"],
+    ]);
+  });
+
   it("posts ask questions and parses citation shape", async () => {
     const fetchImpl = mockFetch((_url, init) => {
       expect(init?.body).toBe(JSON.stringify({ question: "budget variance" }));

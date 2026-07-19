@@ -19,6 +19,11 @@ up: ## Start frontend + backend + db locally (mock AI, disabled auth)
 
 down: ## Stop and remove the local stack
 	docker compose down -v
+local-up: ## Start frontend + backend + docker db (mock AI, disabled auth)
+	docker compose up -d db
+	cd apps/api && . .venv/bin/activate && uvicorn app.main:app --reload & \
+	cd apps/web && npm run dev & \
+	wait
 
 logs: ## Tail logs from the local stack
 	docker compose logs -f

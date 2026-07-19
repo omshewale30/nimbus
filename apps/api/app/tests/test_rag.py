@@ -2,15 +2,18 @@
 from __future__ import annotations
 
 import math
+from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy import select
 
 from app.models.audit_event import AuditEvent
+from app.models.content_chunk import ContentChunk
 from app.models.content_item import ContentItem
 from app.models.project import Project
 from app.services.ai.base import EMBEDDING_DIM
 from app.services.ai.mock_provider import MockAIProvider
+from app.services.rag import indexer
 from app.services.rag.indexer import chunk_markdown, project_document
 from app.services.rag.retriever import MockRetriever
 
@@ -83,6 +86,17 @@ def test_project_document_includes_key_fields():
 
 
 @pytest.fixture
+def clean_rag_index_tables(db_session):
+    for model in (ContentChunk, AuditEvent, ContentItem, Project):
+        db_session.query(model).delete()
+    db_session.commit()
+    yield
+    for model in (ContentChunk, AuditEvent, ContentItem, Project):
+        db_session.query(model).delete()
+    db_session.commit()
+
+
+@pytest.fixture
 def rag_data(db_session):
     rows = [
         ContentItem(
@@ -134,6 +148,117 @@ async def test_mock_retriever_ranks_and_excludes_unpublished(db_session, rag_dat
 async def test_mock_retriever_finds_projects(db_session, rag_data):
     results = await MockRetriever().search(db_session, "invoice ocr", k=5)
     assert any(r.source_type == "project" for r in results)
+
+
+async def test_reindex_all_excludes_archived_projects_and_deletes_stale_chunks(
+    db_session, monkeypatch, clean_rag_index_tables
+):
+    monkeypatch.setattr(indexer, "_is_postgres", lambda db: True)
+    archived = Project(
+        name="Archived invoice OCR",
+        status="pilot",
+        summary="Legacy invoice OCR project.",
+        archived_at=datetime.now(UTC),
+        tools_used=[],
+        related_slugs=[],
+    )
+    active = Project(
+        name="Active invoice OCR",
+        status="pilot",
+        summary="Current invoice OCR project.",
+        tools_used=[],
+        related_slugs=[],
+    )
+    db_session.add_all([archived, active])
+    db_session.flush()
+    db_session.add(
+        ContentChunk(
+            source_type="project",
+            source_key=str(archived.id),
+            chunk_index=0,
+            title=archived.name,
+            kind="project",
+            heading="",
+            text="stale archived project chunk",
+            embedding=[0.0] * EMBEDDING_DIM,
+            checksum="stale",
+        )
+    )
+    db_session.commit()
+
+    stats = await indexer.reindex_all(db_session, MockAIProvider())
+    db_session.commit()
+
+    chunks = db_session.execute(
+        select(ContentChunk).where(ContentChunk.source_type == "project")
+    ).scalars().all()
+    assert stats["indexed"] == 1
+    assert stats["deleted_sources"] == 1
+    assert [(c.source_key, c.title) for c in chunks] == [(str(active.id), active.name)]
+
+
+async def test_reindex_project_purges_archived_project_chunks(
+    db_session, monkeypatch, clean_rag_index_tables
+):
+    monkeypatch.setattr(indexer, "_is_postgres", lambda db: True)
+    archived = Project(
+        name="Archived invoice OCR",
+        status="pilot",
+        summary="Legacy invoice OCR project.",
+        archived_at=datetime.now(UTC),
+        tools_used=[],
+        related_slugs=[],
+    )
+    db_session.add(archived)
+    db_session.flush()
+    db_session.add(
+        ContentChunk(
+            source_type="project",
+            source_key=str(archived.id),
+            chunk_index=0,
+            title=archived.name,
+            kind="project",
+            heading="",
+            text="stale archived project chunk",
+            embedding=[0.0] * EMBEDDING_DIM,
+            checksum="stale",
+        )
+    )
+    db_session.commit()
+
+    await indexer.reindex_project(db_session, MockAIProvider(), archived)
+    db_session.commit()
+
+    chunks = db_session.execute(
+        select(ContentChunk).where(ContentChunk.source_type == "project")
+    ).scalars().all()
+    assert chunks == []
+
+
+async def test_mock_retriever_excludes_archived_projects(db_session, clean_rag_index_tables):
+    archived = Project(
+        name="Archived invoice OCR",
+        status="pilot",
+        summary="Shared reimbursement OCR workflow.",
+        archived_at=datetime.now(UTC),
+        tools_used=[],
+        related_slugs=[],
+    )
+    active = Project(
+        name="Active invoice OCR",
+        status="pilot",
+        summary="Shared reimbursement OCR workflow.",
+        tools_used=[],
+        related_slugs=[],
+    )
+    db_session.add_all([archived, active])
+    db_session.commit()
+
+    results = await MockRetriever().search(db_session, "reimbursement ocr", k=5)
+
+    project_refs = [r.source_key for r in results if r.source_type == "project"]
+    assert str(active.id) in project_refs
+    assert str(archived.id) not in project_refs
 
 
 def test_ask_returns_grounded_answer_with_citations(client, db_session, rag_data):
